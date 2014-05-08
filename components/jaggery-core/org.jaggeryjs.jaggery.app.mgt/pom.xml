@@ -75,6 +75,11 @@
             <groupId>com.googlecode.json-simple.wso2</groupId>
             <artifactId>json-simple</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jaggeryjs</groupId>
+            <artifactId>org.jaggeryjs.apps</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

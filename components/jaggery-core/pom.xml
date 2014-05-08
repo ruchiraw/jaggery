@@ -33,6 +33,8 @@
 
     <modules>
         <module>org.jaggeryjs.jaggery.core</module>
+        <module>org.jaggeryjs.core</module>
+        <module>org.jaggeryjs.apps</module>
         <module>org.jaggeryjs.jaggery.app.mgt</module>
         <module>org.jaggeryjs.jaggery.deployer</module>
         <module>org.jaggeryjs.jaggery.tools</module>

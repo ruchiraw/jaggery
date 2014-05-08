@@ -24,6 +24,7 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jaggeryjs.apps.JaggeryContextListener;
 import org.jaggeryjs.hostobjects.log.LogHostObject;
 import org.jaggeryjs.jaggery.core.JaggeryCoreConstants;
 import org.jaggeryjs.jaggery.core.ScriptReader;
@@ -42,8 +43,6 @@ import org.wso2.carbon.CarbonException;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.core.session.CarbonTomcatClusterableSessionManager;
 import org.wso2.carbon.webapp.mgt.*;
-import org.wso2.carbon.utils.FileManipulator;
-import org.wso2.carbon.utils.deployment.GhostDeployerUtils;
 
 
 import javax.servlet.ServletContext;
@@ -58,6 +57,10 @@ import java.util.*;
  */
 
 public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
+
+    private static final String JAGGERYAPP_VERSION_KEY = "version";
+
+    private static final String JAGGERYAPP_MAIN_KEY = "main";
 
     private static Log log = LogFactory.getLog(TomcatJaggeryWebappsDeployer.class);
 
@@ -198,14 +201,31 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
 
         try {
             JSONObject jaggeryConfigObj = readJaggeryConfig(webappFile);
-
             Tomcat tomcat = DataHolder.getCarbonTomcatService().getTomcat();
+            String version = getJaggeryAppVersion(jaggeryConfigObj);
+            Context context;
+            if ("1".equals(version) || "1.0".equals(version)) {
+                //application.serve() implementation
+                context =
+                        DataHolder.getCarbonTomcatService().addWebApp(contextStr, webappFile.getAbsolutePath(), new LifecycleListener() {
+                            @Override
+                            public void lifecycleEvent(LifecycleEvent lifecycleEvent) {
+                                if (Lifecycle.BEFORE_START_EVENT.equals(lifecycleEvent.getType())) {
+                                    Context context = (Context) lifecycleEvent.getLifecycle();
+                                    context.addParameter(org.jaggeryjs.apps.JaggeryConstants.JAGGERY_INITIALIZER,
+                                            "server://jaggery/engines/apps/index.js");
+                                    context.getServletContext().addListener(new JaggeryContextListener());
+                                }
+                            }
+                        });
+            } else {
+                context =
+                        DataHolder.getCarbonTomcatService().addWebApp(contextStr, webappFile.getAbsolutePath(),
+                                getLifecycleListener(securityConstraint, jaggeryConfigObj, version));
+            }
 
-            Context context =
-                    DataHolder.getCarbonTomcatService().addWebApp(contextStr, webappFile.getAbsolutePath(),
-                            new JaggeryConfListener(jaggeryConfigObj, securityConstraint));
             //deploying web app for url mapping inside virtual host
-            	 if (DataHolder.getHotUpdateService() != null) {
+            if (DataHolder.getHotUpdateService() != null) {
                 List<String> hostNames = DataHolder.getHotUpdateService().getMappigsPerWebapp(contextStr);
                 for (String hostName : hostNames) {
                     Host host = DataHolder.getHotUpdateService().addHost(hostName);
@@ -213,7 +233,7 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
   */
                     Context contextForHost =
                             DataHolder.getCarbonTomcatService().addWebApp(host, "/", webappFile.getAbsolutePath(),
-                                    new JaggeryConfListener(jaggeryConfigObj, securityConstraint));
+                                    getLifecycleListener(securityConstraint, jaggeryConfigObj, version));
                     log.info("Deployed JaggeryApp on host: " + contextForHost);
                 }
             }
@@ -223,17 +243,17 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
                 context.setDistributable(true);
                 CarbonTomcatClusterableSessionManager sessionManager =
                         new CarbonTomcatClusterableSessionManager(tenantId);
-                context.setManager(sessionManager);                
-                
+                context.setManager(sessionManager);
+
                 Object alreadyinsertedSMMap = configurationContext.getProperty(CarbonConstants.TOMCAT_SESSION_MANAGER_MAP);
-                if(alreadyinsertedSMMap != null){
-                	((Map<String, CarbonTomcatClusterableSessionManager>) alreadyinsertedSMMap).put(context.getName(), sessionManager);
-                }else{
-                	sessionManagerMap.put(context.getName(), sessionManager);
-                	configurationContext.setProperty(CarbonConstants.TOMCAT_SESSION_MANAGER_MAP,
+                if (alreadyinsertedSMMap != null) {
+                    ((Map<String, CarbonTomcatClusterableSessionManager>) alreadyinsertedSMMap).put(context.getName(), sessionManager);
+                } else {
+                    sessionManagerMap.put(context.getName(), sessionManager);
+                    configurationContext.setProperty(CarbonConstants.TOMCAT_SESSION_MANAGER_MAP,
                             sessionManagerMap);
                 }
-                
+
             } else {
                 context.setManager(new CarbonTomcatSessionManager(tenantId));
             }
@@ -259,6 +279,15 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
             webappsHolder.getFaultyWebapps().put(filename, webapp);
             webappsHolder.getStartedWebapps().remove(filename);
             throw new CarbonException(msg, e);
+        }
+    }
+
+    private LifecycleListener getLifecycleListener(SecurityConstraint securityConstraint, JSONObject jaggeryConfigObj, String version) {
+        if ("1".equals(version) || "1.0".equals(version)) {
+            //application.serve() implementation
+            return new JaggeryAppsLifecycleListener(jaggeryConfigObj, securityConstraint);
+        } else {
+            return new JaggeryConfListener(jaggeryConfigObj, securityConstraint);
         }
     }
 
@@ -322,6 +351,113 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
         }
     }
 
+    private static class JaggeryAppsLifecycleListener implements LifecycleListener {
+        private JSONObject jaggeryConfig;
+        private SecurityConstraint securityConstraint;
+
+        private JaggeryAppsLifecycleListener(JSONObject jaggeryConfig, SecurityConstraint securityConstraint) {
+            this.jaggeryConfig = jaggeryConfig;
+            this.securityConstraint = securityConstraint;
+        }
+
+        public void lifecycleEvent(LifecycleEvent event) {
+            if (Lifecycle.BEFORE_START_EVENT.equals(event.getType())) {
+                /*Context ctx = (Context) event.getLifecycle();
+                Tomcat.addServlet(ctx, JaggeryCoreConstants.JAGGERY_SERVLET_NAME, JaggeryAsyncServlet.class.getName());
+                ctx.addServletMapping("*//*", JaggeryCoreConstants.JAGGERY_SERVLET_NAME);
+                ctx.getServletContext().addListener(new ServletContextListener() {
+                    @Override
+                    public void contextInitialized(ServletContextEvent servletContextEvent) {
+                        // create the thread pool
+                        ThreadPoolExecutor executor = new ThreadPoolExecutor(100, 200, 50000L,
+                                TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10000));
+                        servletContextEvent.getServletContext().setAttribute("executor",
+                                executor);
+                    }
+
+                    @Override
+                    public void contextDestroyed(ServletContextEvent servletContextEvent) {
+                        ThreadPoolExecutor executor = (ThreadPoolExecutor) servletContextEvent
+                                .getServletContext().getAttribute("executor");
+                        executor.shutdown();
+                    }
+                });*/
+                //Tomcat.addServlet(ctx, JaggeryCoreConstants.JAGGERY_WEBSOCKET_SERVLET_NAME, JaggeryCoreConstants.JAGGERY_WEBSOCKET_SERVLET_CLASS);
+
+                /*FilterDef filterDef = new FilterDef();
+                filterDef.setFilterName(JaggeryCoreConstants.JAGGERY_FILTER_NAME);
+                filterDef.setFilterClass(JaggeryCoreConstants.JAGGERY_FILTER_CLASS);
+                ctx.addFilterDef(filterDef);
+
+                FilterMap filter1mapping = new FilterMap();
+                filter1mapping.setFilterName(JaggeryCoreConstants.JAGGERY_FILTER_NAME);
+                filter1mapping.addURLPattern(JaggeryCoreConstants.JAGGERY_URL_PATTERN);
+                ctx.addFilterMap(filter1mapping);
+
+                ctx.addApplicationListener(JaggeryCoreConstants.JAGGERY_APPLICATION_SESSION_LISTENER);
+
+                ctx.addConstraint(securityConstraint);
+                addWelcomeFiles(ctx, jaggeryConfig);
+                //jaggery conf params if null conf is not available
+                if (jaggeryConfig != null) {
+                    setDisplayName(ctx, jaggeryConfig);
+                    addErrorPages(ctx, jaggeryConfig);
+                    addSecurityConstraints(ctx, jaggeryConfig);
+                    setLoginConfig(ctx, jaggeryConfig);
+                    addSecurityRoles(ctx, jaggeryConfig);
+                    // addUrlMappings(ctx, jaggeryConfig);
+                    addParameters(ctx, jaggeryConfig);
+                    addLogLevel(ctx, jaggeryConfig);
+                }
+                return;*/
+            }
+            /*if (Lifecycle.START_EVENT.equals(event.getType())) {
+                Context context = (Context) event.getLifecycle();
+                try {
+                   *//* WebAppManager.getEngine().enterContext();
+                    WebAppManager.deploy(context);
+                    setDisplayName(context, jaggeryConfig);
+                    if (jaggeryConfig != null) {
+                        addSessionCreatedListners(context,
+                                (JSONArray) jaggeryConfig.get(JaggeryCoreConstants.JaggeryConfigParams.SESSION_CREATED_LISTENER_SCRIPTS));
+                        addSessionDestroyedListners(context,
+                                (JSONArray) jaggeryConfig.get(JaggeryCoreConstants.JaggeryConfigParams.SESSION_DESTROYED_LISTENER_SCRIPTS));
+                        executeScripts(context,
+                                (JSONArray) jaggeryConfig.get(JaggeryCoreConstants.JaggeryConfigParams.INIT_SCRIPTS));
+                        addUrlMappings(context, jaggeryConfig);
+                    }*//*
+                    WebAppManager.deploy(context, getMainScript(jaggeryConfig));
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                    try {
+                        context.destroy();
+                    } catch (LifecycleException e1) {
+                        log.error(e1.getMessage(), e1);
+                    }
+                } finally {
+                    //RhinoEngine.exitContext();
+                }
+                return;
+            }
+            if (Lifecycle.STOP_EVENT.equals(event.getType())) {
+                Context context = (Context) event.getLifecycle();
+                try {
+                    WebAppManager.getEngine().enterContext();
+                    WebAppManager.undeploy(context);
+                    if (jaggeryConfig != null) {
+                        executeScripts(context,
+                                (JSONArray) jaggeryConfig.get(JaggeryCoreConstants.JaggeryConfigParams.DESTROY_SCRIPTS));
+                    }
+                } catch (ScriptException e) {
+                    log.error(e.getMessage(), e);
+                } finally {
+                    RhinoEngine.exitContext();
+                }
+                return;
+            }*/
+        }
+    }
+
     private static void initJaggeryappDefaults(Context ctx, JSONObject jaggeryConfig, SecurityConstraint securityConstraint) {
 
         Tomcat.addServlet(ctx, JaggeryCoreConstants.JAGGERY_SERVLET_NAME, JaggeryCoreConstants.JAGGERY_SERVLET_CLASS);
@@ -348,7 +484,7 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
             addSecurityConstraints(ctx, jaggeryConfig);
             setLoginConfig(ctx, jaggeryConfig);
             addSecurityRoles(ctx, jaggeryConfig);
-           // addUrlMappings(ctx, jaggeryConfig);
+            // addUrlMappings(ctx, jaggeryConfig);
             addParameters(ctx, jaggeryConfig);
             addLogLevel(ctx, jaggeryConfig);
         }
@@ -626,56 +762,56 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
         }
     }
 
-	private static void addUrlMappings(Context context, JSONObject obj) {
-		Object test = context.getServletContext().getAttribute("org.jaggeryjs.serveFunction");
-		JSONArray arr = null;
-		if (test != null) {
-			// URL mapping for progamticaly
-			arr = new JSONArray();
-			JSONObject js1 = new JSONObject();
-			JSONObject js2 = new JSONObject();
-			js1.put("url", "/*");
-			js1.put("path", "/index.jag");
-			arr.add(js1);
-		} else {
-			arr = (JSONArray) obj
-					.get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS);
-		}
-		if (arr != null) {
-			Map<String, Object> urlMappings = new HashMap<String, Object>();
-			for (Object mapObj : arr) {
-				JSONObject mapping = (JSONObject) mapObj;
-				String url = (String) mapping
-						.get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS_URL);
-				String path = (String) mapping
-						.get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS_PATH);
-				if (url != null && path != null) {
-					path = path.startsWith("/") ? path : "/" + path;
-					FilterMap filterMap = new FilterMap();
-					filterMap
-							.setFilterName(JaggeryCoreConstants.JAGGERY_FILTER_NAME);
-					filterMap.addURLPattern(url);
-					context.addFilterMap(filterMap);
-					if (url.equals("/")) {
-						urlMappings.put("/", path);
-						continue;
-					}
-					url = url.startsWith("/") ? url.substring(1) : url;
-					List<String> parts = new ArrayList<String>(
-							Arrays.asList(url.split("/", -1)));
-					addMappings(urlMappings, parts, path);
-				} else {
-					log.error("Invalid url mapping in jaggery.conf url : "
-							+ url + ", path : " + path);
-				}
-			}
+    private static void addUrlMappings(Context context, JSONObject obj) {
+        Object test = context.getServletContext().getAttribute("org.jaggeryjs.serveFunction");
+        JSONArray arr = null;
+        if (test != null) {
+            // URL mapping for progamticaly
+            arr = new JSONArray();
+            JSONObject js1 = new JSONObject();
+            JSONObject js2 = new JSONObject();
+            js1.put("url", "/*");
+            js1.put("path", "/index.jag");
+            arr.add(js1);
+        } else {
+            arr = (JSONArray) obj
+                    .get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS);
+        }
+        if (arr != null) {
+            Map<String, Object> urlMappings = new HashMap<String, Object>();
+            for (Object mapObj : arr) {
+                JSONObject mapping = (JSONObject) mapObj;
+                String url = (String) mapping
+                        .get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS_URL);
+                String path = (String) mapping
+                        .get(JaggeryCoreConstants.JaggeryConfigParams.URL_MAPPINGS_PATH);
+                if (url != null && path != null) {
+                    path = path.startsWith("/") ? path : "/" + path;
+                    FilterMap filterMap = new FilterMap();
+                    filterMap
+                            .setFilterName(JaggeryCoreConstants.JAGGERY_FILTER_NAME);
+                    filterMap.addURLPattern(url);
+                    context.addFilterMap(filterMap);
+                    if (url.equals("/")) {
+                        urlMappings.put("/", path);
+                        continue;
+                    }
+                    url = url.startsWith("/") ? url.substring(1) : url;
+                    List<String> parts = new ArrayList<String>(
+                            Arrays.asList(url.split("/", -1)));
+                    addMappings(urlMappings, parts, path);
+                } else {
+                    log.error("Invalid url mapping in jaggery.conf url : "
+                            + url + ", path : " + path);
+                }
+            }
 
-			
-				context.getServletContext().setAttribute(
-						CommonManager.JAGGERY_URLS_MAP, urlMappings);
-			
-		}
-	}
+
+            context.getServletContext().setAttribute(
+                    CommonManager.JAGGERY_URLS_MAP, urlMappings);
+
+        }
+    }
 
     private static void addLogLevel(Context cx, JSONObject jaggeryConfig) {
         String level = (String) jaggeryConfig.get(JaggeryCoreConstants.JaggeryConfigParams.LOG_LEVEL);
@@ -740,6 +876,22 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
             }
         }
         addMappings(childMap, parts, path);
+    }
+
+    private static String getJaggeryAppVersion(JSONObject config) {
+        Object version = config.get(JAGGERYAPP_VERSION_KEY);
+        if (version == null || !(version instanceof String)) {
+            return null;
+        }
+        return (String) version;
+    }
+
+    private static String getMainScript(JSONObject config) {
+        Object main = config.get(JAGGERYAPP_MAIN_KEY);
+        if (main == null || !(main instanceof String)) {
+            return "index.js";
+        }
+        return (String) main;
     }
 }
 

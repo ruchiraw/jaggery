@@ -46,6 +46,16 @@
         </dependency>
         <dependency>
             <groupId>org.jaggeryjs</groupId>
+            <artifactId>org.jaggeryjs.core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jaggeryjs</groupId>
+            <artifactId>org.jaggeryjs.apps</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jaggeryjs</groupId>
             <artifactId>org.jaggeryjs.jaggery.app.mgt</artifactId>
         </dependency>
         <dependency>
@@ -310,6 +320,8 @@
                             <bundles>
                                 <bundleDef>org.jaggeryjs:org.jaggeryjs.jaggery.deployer</bundleDef>
                                 <bundleDef>org.jaggeryjs:org.jaggeryjs.jaggery.core</bundleDef>
+                                <bundleDef>org.jaggeryjs:org.jaggeryjs.core</bundleDef>
+                                <bundleDef>org.jaggeryjs:org.jaggeryjs.apps</bundleDef>
                                 <bundleDef>org.jaggeryjs:org.jaggeryjs.jaggery.app.mgt</bundleDef>
                                 <bundleDef>org.jaggeryjs:org.jaggeryjs.jaggery.tools</bundleDef>
                                 <bundleDef>org.jaggeryjs:org.jaggeryjs.scriptengine</bundleDef>
