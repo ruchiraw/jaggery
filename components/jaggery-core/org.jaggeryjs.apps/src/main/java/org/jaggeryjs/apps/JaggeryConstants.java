@@ -1,6 +1,7 @@
 package org.jaggeryjs.apps;
 
 public class JaggeryConstants {
+
     public static final String JAGGERY_INITIALIZER = "jaggery.initializer";
 
     public static final String JAGGERY_EXECUTOR = "jaggery.executor";

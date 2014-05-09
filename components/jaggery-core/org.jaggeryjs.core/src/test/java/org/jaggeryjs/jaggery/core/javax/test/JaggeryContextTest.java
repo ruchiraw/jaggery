@@ -3,7 +3,7 @@ package org.jaggeryjs.jaggery.core.javax.test;
 import junit.framework.TestCase;
 import org.jaggeryjs.core.JaggeryEngine;
 import org.jaggeryjs.core.JaggeryException;
-import org.jaggeryjs.core.JaggeryFileReader;
+import org.jaggeryjs.core.JaggeryScriptImpl;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
@@ -16,7 +16,7 @@ public class JaggeryContextTest extends TestCase {
         long t1 = System.currentTimeMillis();
         final JaggeryEngine e1 = new JaggeryEngine("webapp",
                 new InputStreamReader(this.getClass().getResourceAsStream("/test1.js")),
-                new JaggeryFileReader());
+                new JaggeryScriptImpl());
         Bindings init = new SimpleBindings();
         init.put("request", "req");
         init.put("response", "res");

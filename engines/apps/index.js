@@ -1,17 +1,27 @@
-var require = (function (reader) {
+var require = (function (jaggery) {
+
+    var engine = jaggery.engine,
+        reader = jaggery.reader;
+
+    var FILENAME = javax.script.ScriptEngine.FILENAME;
 
     return function (module) {
-        var r = reader.getReader(module);
+        var script = reader.getScript(module);
+        var r = script.getReader();
         var ch;
         var s = '';
         while ((ch = r.read()) != -1) {
             s += new java.lang.Character(ch);
         }
-        //print(s);
-        eval(s);
-        //print(s);
+        var old = engine.get(FILENAME);
+        engine.put(FILENAME, script.getId());
+        try {
+            engine.eval(s);
+        } finally {
+            engine.put(FILENAME, old);
+        }
     };
-}(reader));
+}(jaggery));
 
 var application = (function () {
     var fn;

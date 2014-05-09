@@ -1,5 +1,8 @@
 package org.jaggeryjs.apps;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +15,8 @@ import javax.servlet.annotation.WebListener;
 
 @WebListener
 public class JaggeryContextListener implements ServletContextListener {
+
+    private static final Log log = LogFactory.getLog(JaggeryContextListener.class);
 
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServletContext servletContext = servletContextEvent.getServletContext();
