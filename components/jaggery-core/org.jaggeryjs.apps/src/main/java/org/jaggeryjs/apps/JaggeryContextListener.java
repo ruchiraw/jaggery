@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -20,6 +21,13 @@ public class JaggeryContextListener implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServletContext servletContext = servletContextEvent.getServletContext();
+        ThreadFactory factory = new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                return thread;
+            }
+        };
         // create the thread pool
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 getInteger(servletContext, JaggeryConstants.JAGGERY_POOL_MIN, 200),
@@ -27,7 +35,8 @@ public class JaggeryContextListener implements ServletContextListener {
                 getLong(servletContext, JaggeryConstants.JAGGERY_KEEPALIVE, 10000L),
                 TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<Runnable>(
-                        getInteger(servletContext, JaggeryConstants.JAGGERY_REQUEST_QUEUE, 10000))
+                        getInteger(servletContext, JaggeryConstants.JAGGERY_REQUEST_QUEUE, 10000)),
+                factory
         );
         servletContext.setAttribute(JaggeryConstants.JAGGERY_EXECUTOR, executor);
         ServletRegistration registration = servletContext.getServletRegistration(JaggeryAsyncServlet.NAME);

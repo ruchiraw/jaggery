@@ -33,6 +33,8 @@ public class JaggeryAsyncRequestProcessor implements Runnable {
 
     public static final String RESPONSE_KEY = "response";
 
+    private static final ThreadLocal<JaggeryEngine> threadLocalEngine = new ThreadLocal<JaggeryEngine>();
+
     private AsyncContext asyncContext;
     private int secs;
 
@@ -71,28 +73,31 @@ public class JaggeryAsyncRequestProcessor implements Runnable {
     private void execute(AsyncContext asyncContext) throws JaggeryException {
         ServletRequest request = asyncContext.getRequest();
         ServletResponse response = asyncContext.getResponse();
-        final ServletContext servletContext = request.getServletContext();
-        final String contextPath = servletContext.getContextPath();
 
-        Map<String, Object> globals = new HashMap<String, Object>();
-        globals.put(CONTEXT_KEY, servletContext);
-
-        JaggeryEngine engine = new JaggeryEngine(
-                globals,
-                getReader(servletContext),
-                new JaggeryReader() {
-                    @Override
-                    public JaggeryScript getScript(String scriptId) throws IOException {
-                        InputStream in = servletContext.getResourceAsStream(scriptId);
-                        if (in == null) {
-                            throw new IOException("script " + scriptId + " cannot be found at " +
-                                    servletContext.getContextPath());
+        JaggeryEngine engine = threadLocalEngine.get();
+        if (engine == null) {
+            final ServletContext servletContext = request.getServletContext();
+            final String contextPath = servletContext.getContextPath();
+            Map<String, Object> globals = new HashMap<String, Object>();
+            globals.put(CONTEXT_KEY, servletContext);
+            engine = new JaggeryEngine(
+                    globals,
+                    getReader(servletContext),
+                    new JaggeryReader() {
+                        @Override
+                        public JaggeryScript getScript(String scriptId) throws IOException {
+                            InputStream in = servletContext.getResourceAsStream(scriptId);
+                            if (in == null) {
+                                throw new IOException("script " + scriptId + " cannot be found at " +
+                                        servletContext.getContextPath());
+                            }
+                            return new JaggeryScript("apps:/" + contextPath + scriptId, new InputStreamReader(in));
                         }
-                        return new JaggeryScript("apps:/" + contextPath + scriptId, new InputStreamReader(in));
                     }
-                }
-        );
-
+            );
+            System.out.println("======================creating new engine====================");
+            threadLocalEngine.set(engine);
+        }
         Bindings options = new SimpleBindings();
         options.put(REQUEST_KEY, request);
         options.put(RESPONSE_KEY, response);
