@@ -1,7 +1,7 @@
 var require = (function (jaggery) {
 
-    var engine = jaggery.engine,
-        reader = jaggery.reader;
+    var engine = jaggery.get('engine'),
+        reader = jaggery.get('reader');
 
     var FILENAME = javax.script.ScriptEngine.FILENAME;
 

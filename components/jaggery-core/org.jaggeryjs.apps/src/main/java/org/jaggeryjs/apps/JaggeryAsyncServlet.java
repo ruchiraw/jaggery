@@ -1,14 +1,13 @@
 package org.jaggeryjs.apps;
 
-import java.io.IOException;
-import java.util.concurrent.ThreadPoolExecutor;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @WebServlet(name = "JaggeryAsyncServlet", urlPatterns = "/*", asyncSupported = true)
 public class JaggeryAsyncServlet extends HttpServlet {
@@ -16,12 +15,16 @@ public class JaggeryAsyncServlet extends HttpServlet {
 
     public static final String NAME = "JaggeryAsyncServlet";
 
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response) throws ServletException, IOException {
+    public void init() {
+
+    }
+
+    protected void service(HttpServletRequest request,
+                           HttpServletResponse response) throws ServletException, IOException {
         long startTime = System.currentTimeMillis();
-        System.out.println("AsyncLongRunningServlet Start::Name="
+        /*System.out.println("AsyncLongRunningServlet Start::Name="
                 + Thread.currentThread().getName() + "::ID="
-                + Thread.currentThread().getId());
+                + Thread.currentThread().getId());*/
 
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
 
@@ -36,13 +39,13 @@ public class JaggeryAsyncServlet extends HttpServlet {
         asyncCtx.setTimeout(9000);
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request
-                .getServletContext().getAttribute(JaggeryConstants.JAGGERY_EXECUTOR);
+                .getServletContext().getAttribute(JaggeryConstants.SERVLET_EXECUTOR);
 
         executor.execute(new JaggeryAsyncRequestProcessor(asyncCtx, secs));
         long endTime = System.currentTimeMillis();
-        System.out.println("AsyncLongRunningServlet End::Name="
+        /*System.out.println("AsyncLongRunningServlet End::Name="
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId() + "::Time Taken="
-                + (endTime - startTime) + " ms.");
+                + (endTime - startTime) + " ms.");*/
     }
 }
