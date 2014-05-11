@@ -66,6 +66,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>../p2-profile-gen/target/wso2carbon-core-${carbon.kernal.version}/jaggery</directory>
+            <outputDirectory>${pom.artifactId}-${pom.version}/carbon/jaggery/</outputDirectory>
+            <includes>
+                <include>*/**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>../../apps/</directory>
             <outputDirectory>jaggery-${pom.version}/apps/
             </outputDirectory>

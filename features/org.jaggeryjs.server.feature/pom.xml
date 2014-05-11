@@ -299,6 +299,27 @@
                                         <include>modules/**</include>
                                     </includes>
                                 </resource>
+                                <resource>
+                                    <directory>../../</directory>
+                                    <includes>
+                                        <include>modules/**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-engine-source</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>src/main/resources/engines</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>../../engines</directory>
+                                </resource>
                             </resources>
                         </configuration>
                     </execution>
