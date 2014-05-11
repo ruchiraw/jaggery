@@ -5,5 +5,8 @@ application.serve(function (req, res) {
     //throw new Error("foo");
 });
 
+module.exports.a = 10;
 
-//print('=================');
+exports.b = function() {
+    print('b');
+};
