@@ -31,8 +31,6 @@ public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine>
     @Override
     public JaggeryEngine create() throws JaggeryException {
         Map<String, Object> globals = new HashMap<String, Object>();
-        globals.put(JaggeryConstants.CONTEXT_KEY, servletContext);
-        JaggeryScript initializer = getReader(servletContext);
         JaggeryReader reader = new JaggeryReader() {
             @Override
             public JaggeryScript getScript(String scriptId) throws IOException {
@@ -44,7 +42,9 @@ public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine>
                 return new JaggeryScript("apps:/" + contextPath + scriptId, new InputStreamReader(in));
             }
         };
-        return new JaggeryEngine(globals, initializer, reader);
+        globals.put("reader", reader);
+        globals.put(JaggeryConstants.CONTEXT_KEY, servletContext);
+        return new JaggeryEngine(globals, getReader(servletContext));
     }
 
     @Override
@@ -54,7 +54,7 @@ public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine>
 
     @Override
     public void passivateObject(PooledObject<JaggeryEngine> pooledObject) {
-        //pooledObject.getObject().setLength(0);
+        //pooledObject.getObject();
     }
 
     private JaggeryScript getReader(ServletContext servletContext) throws JaggeryException {

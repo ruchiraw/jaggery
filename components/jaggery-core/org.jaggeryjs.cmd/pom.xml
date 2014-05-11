@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.jaggeryjs</groupId>
+        <artifactId>jaggery-core</artifactId>
+        <version>0.9.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>org.jaggeryjs.cmd</artifactId>
+    <packaging>jar</packaging>
+    <name>Jaggery - Core</name>
+    <url>http://wso2.org</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jaggeryjs</groupId>
+            <artifactId>org.jaggeryjs.core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.clamshellcli</groupId>
+            <artifactId>clamshell-api</artifactId>
+            <version>0.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.clamshellcli</groupId>
+            <artifactId>clamshell-impl-core</artifactId>
+            <version>0.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.clamshellcli</groupId>
+            <artifactId>clamshell-impl-plugins</artifactId>
+            <version>0.5.2</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>clamshellcli.repo</id>
+            <name>Clamshell-Cli Repository</name>
+            <url>http://s3.amazonaws.com/repo.clamshellcli.org/release</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>org.jaggeryjs.cmd.Client</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <surefire.plugin.version>2.17</surefire.plugin.version>
+    </properties>
+
+</project>
+

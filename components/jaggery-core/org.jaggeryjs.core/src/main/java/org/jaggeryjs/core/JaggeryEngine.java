@@ -19,15 +19,13 @@ public class JaggeryEngine {
 
     private static final String ENGINE_KEY = "engine";
 
-    private static final String READER_KEY = "reader";
-
     private static final String JAGGERY_KEY = "jaggery";
 
     private Invocable invocable;
 
     private static ScriptEngineManager manager = new ScriptEngineManager();
 
-    public JaggeryEngine(Map<String, Object> globals, JaggeryScript initializer, JaggeryReader reader) throws JaggeryException {
+    public JaggeryEngine(Map<String, Object> globals, JaggeryScript initializer) throws JaggeryException {
         ScriptEngine engine = manager.getEngineByName("js");
         //System.out.println(engine.getFactory().getEngineName());
         this.invocable = (Invocable) engine;
@@ -37,7 +35,6 @@ public class JaggeryEngine {
             bindings.put(entry.getKey(), entry.getValue());
         }
         bindings.put(ENGINE_KEY, engine);
-        bindings.put(READER_KEY, reader);
         engine.put(JAGGERY_KEY, bindings);
 
         String oldScriptId = (String) engine.get(ScriptEngine.FILENAME);
@@ -52,13 +49,13 @@ public class JaggeryEngine {
         }
     }
 
-    public void exec(Map<String, Object> options) throws JaggeryException {
+    public Object exec(Map<String, Object> options) throws JaggeryException {
         Bindings object = new SimpleBindings();
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             object.put(entry.getKey(), entry.getValue());
         }
         try {
-            this.invocable.invokeFunction(EXEC_CALLBACK_KEY, object);
+            return this.invocable.invokeFunction(EXEC_CALLBACK_KEY, object);
         } catch (ScriptException e) {
             throw new JaggeryException("Error executing exec callback of JaggeryEngine", e);
         } catch (NoSuchMethodException e) {

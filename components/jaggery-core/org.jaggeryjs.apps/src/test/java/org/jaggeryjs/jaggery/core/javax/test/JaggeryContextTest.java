@@ -1,8 +1,8 @@
 //package org.jaggeryjs.jaggery.core.javax.test;
 //
 //import junit.framework.TestCase;
-//import org.jaggeryjs.core.JaggeryEngine;
-//import org.jaggeryjs.core.JaggeryException;
+//import JaggeryEngine;
+//import JaggeryException;
 //import org.jaggeryjs.core.JaggeryReaderImpl;
 //
 //import javax.script.Bindings;
