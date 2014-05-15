@@ -2,6 +2,8 @@ package org.jaggeryjs.apps;
 
 public class JaggeryConstants {
 
+    public static final String HOME = "jaggery.home";
+
     public static final String INITIALIZER = "jaggery.initializer";
 
     public static final String ENGINE_POOL_MIN_IDLE = "jaggery.engine.pool.min.idle";

@@ -1,20 +1,16 @@
 package org.jaggeryjs.apps;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.jaggeryjs.core.JaggeryEngine;
 import org.jaggeryjs.core.JaggeryException;
-import org.jaggeryjs.core.JaggeryScript;
+import org.jaggeryjs.core.JaggeryFile;
+import org.jaggeryjs.core.JaggeryReader;
 
 import javax.servlet.ServletContext;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -29,11 +25,15 @@ public class JaggeryAppConfigs {
 
     private boolean isDevelopment = false;
 
-    private JaggeryScript initializer;
+    private JaggeryFile initializer;
+
+    private JaggeryReader reader;
 
     private long servletTimeout = 1000L;
 
     private String contextPath;
+
+    private String jaggeryHome;
 
     private JaggeryAppConfigs(ServletContext servletContext) throws JaggeryException {
         // create the servlet executor thread pool
@@ -41,9 +41,25 @@ public class JaggeryAppConfigs {
         // create script engine thread pool
         this.enginePool = createEnginePool(servletContext);
         this.isDevelopment = getBoolean(servletContext, JaggeryConstants.DEVELOPMENT_MODE, isDevelopment);
+        this.jaggeryHome = getJaggeryHome(servletContext);
         this.initializer = getInitializer(servletContext);
-        this.servletTimeout = getLong(servletContext, JaggeryConstants.ASYNC_SERVLET_TIMEOUT, servletTimeout);
         this.contextPath = servletContext.getContextPath();
+        this.reader = getReader(servletContext, this.contextPath);
+        this.servletTimeout = getLong(servletContext, JaggeryConstants.ASYNC_SERVLET_TIMEOUT, servletTimeout);
+    }
+
+    private String getJaggeryHome(ServletContext servletContext) throws JaggeryException {
+        String home = servletContext.getInitParameter(JaggeryConstants.HOME);
+        if (home == null) {
+            throw new JaggeryException("Error reading jaggery.home property");
+        }
+        if (!home.startsWith("file://")) {
+            throw new JaggeryException("Invalid value for jaggery.home property : " + home);
+        }
+        if (!home.endsWith("/")) {
+            home += "/";
+        }
+        return !home.endsWith("/") ? home + "/" : home;
     }
 
     public static JaggeryAppConfigs getInstance(ServletContext servletContext) {
@@ -66,7 +82,7 @@ public class JaggeryAppConfigs {
         return isDevelopment;
     }
 
-    public JaggeryScript getInitializer() {
+    public JaggeryFile getInitializer() {
         return initializer;
     }
 
@@ -76,6 +92,10 @@ public class JaggeryAppConfigs {
 
     public String getContextPath() {
         return contextPath;
+    }
+
+    public String getJaggeryHome() {
+        return jaggeryHome;
     }
 
     private GenericObjectPool<JaggeryEngine> createEnginePool(ServletContext servletContext) {
@@ -114,38 +134,99 @@ public class JaggeryAppConfigs {
         return param != null ? Boolean.parseBoolean(param) : val;
     }
 
-    private JaggeryScript getInitializer(ServletContext servletContext) throws JaggeryException {
-        String uri = servletContext.getInitParameter(JaggeryConstants.INITIALIZER);
+    private String getString(ServletContext servletContext, String name, String val) {
+        String param = servletContext.getInitParameter(name);
+        return param != null ? param : val;
+    }
+
+    private JaggeryFile getInitializer(ServletContext servletContext) throws JaggeryException {
+        final String uri = servletContext.getInitParameter(JaggeryConstants.INITIALIZER);
         if (uri == null) {
-            throw new JaggeryException("cannot find " + JaggeryConstants.INITIALIZER +
+            throw new JaggeryException("Cannot find " + JaggeryConstants.INITIALIZER +
                     " property. Please define it via servlet init parameters");
         }
-        if (uri.startsWith("file://")) {
-            try {
-                return new JaggeryScript(uri, new FileReader(FileUtils.toFile(new URL(uri))));
-            } catch (MalformedURLException e) {
-                throw new JaggeryException("malformed file url " + uri + " for " + JaggeryConstants.INITIALIZER, e);
-            } catch (FileNotFoundException e) {
-                throw new JaggeryException(JaggeryConstants.INITIALIZER + " file cannot be found at " + uri, e);
-            }
-        }
         if (uri.startsWith("server://")) {
+            final File initializer;
             try {
-                return new JaggeryScript(uri, new FileReader(FilenameUtils.normalizeNoEndSeparator(uri.substring(9))));
-            } catch (FileNotFoundException e) {
-                throw new JaggeryException(JaggeryConstants.INITIALIZER + " file cannot be found at " + uri + " relative" +
-                        " to the server url : " + new File("").getAbsolutePath(), e);
+                initializer = FileUtils.toFile(new URL(resolvePath(uri.substring(9))));
+            } catch (MalformedURLException e) {
+                throw new JaggeryException(e.getMessage(), e);
             }
+            return new JaggeryFile() {
+                @Override
+                public String getId() {
+                    return uri;
+                }
+
+                @Override
+                public boolean isExists() {
+                    return initializer.exists();
+                }
+
+                @Override
+                public Reader getReader() throws JaggeryException {
+                    try {
+                        return new FileReader(initializer);
+                    } catch (FileNotFoundException e) {
+                        throw new JaggeryException(JaggeryConstants.INITIALIZER +
+                                " file cannot be found at " + initializer.toURI().toString(), e);
+                    }
+                }
+            };
         }
+        JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(servletContext);
         if (uri.startsWith("app://")) {
-            InputStream in = servletContext.getResourceAsStream(uri.substring(6));
-            if (in == null) {
-                throw new JaggeryException(JaggeryConstants.INITIALIZER + " file cannot be found at " + uri + " relative" +
-                        " to the app " + servletContext.getContextPath());
-            }
-            return new JaggeryScript(uri, new InputStreamReader(in));
+            String path = uri.substring(5);
+            final String id = "apps:/" + appConfigs.getContextPath() + path;
+            final InputStream in = servletContext.getResourceAsStream(path);
+            return new JaggeryFile() {
+                @Override
+                public String getId() {
+                    return id;
+                }
+
+                @Override
+                public boolean isExists() {
+                    return in != null;
+                }
+
+                @Override
+                public Reader getReader() {
+                    return new InputStreamReader(in);
+                }
+            };
         } else {
-            throw new JaggeryException("unsupported file url format " + uri + " for " + JaggeryConstants.INITIALIZER);
+            throw new JaggeryException("Unsupported file url format " + uri + " for " + JaggeryConstants.INITIALIZER);
         }
+    }
+
+    private JaggeryReader getReader(final ServletContext servletContext, final String contextPath) {
+        return new JaggeryReader() {
+            @Override
+            public JaggeryFile getFile(final String path) throws JaggeryException {
+                final String id = "apps:/" + contextPath + path;
+                final InputStream in = servletContext.getResourceAsStream(path);
+                return new JaggeryFile() {
+                    @Override
+                    public String getId() {
+                        return id;
+                    }
+
+                    @Override
+                    public boolean isExists() {
+                        return in != null;
+                    }
+
+                    @Override
+                    public Reader getReader() {
+                        return new InputStreamReader(in);
+                    }
+                };
+            }
+        };
+    }
+
+    private String resolvePath(String path) {
+        return this.jaggeryHome + path;
     }
 }

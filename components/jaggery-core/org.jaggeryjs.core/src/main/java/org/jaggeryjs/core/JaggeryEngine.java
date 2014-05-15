@@ -19,22 +19,29 @@ public class JaggeryEngine {
 
     private static final String ENGINE_KEY = "engine";
 
+    private static final String READER_KEY = "reader";
+
     private static final String JAGGERY_KEY = "jaggery";
 
     private Invocable invocable;
 
+    private JaggeryReader reader;
+
     private static ScriptEngineManager manager = new ScriptEngineManager();
 
-    public JaggeryEngine(Map<String, Object> globals, JaggeryScript initializer) throws JaggeryException {
+    public JaggeryEngine(Map<String, Object> globals, JaggeryFile initializer, JaggeryReader reader)
+            throws JaggeryException {
         ScriptEngine engine = manager.getEngineByName("js");
         //System.out.println(engine.getFactory().getEngineName());
         this.invocable = (Invocable) engine;
+        this.reader = reader;
 
         Bindings bindings = new SimpleBindings();
         for (Map.Entry<String, Object> entry : globals.entrySet()) {
             bindings.put(entry.getKey(), entry.getValue());
         }
         bindings.put(ENGINE_KEY, engine);
+        bindings.put(READER_KEY, this.reader);
         engine.put(JAGGERY_KEY, bindings);
 
         String oldScriptId = (String) engine.get(ScriptEngine.FILENAME);

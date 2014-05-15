@@ -4,20 +4,19 @@ import org.clamshellcli.api.Configurator;
 import org.clamshellcli.api.Context;
 import org.clamshellcli.api.IOConsole;
 import org.clamshellcli.core.AnInputController;
-import org.jaggeryjs.core.JaggeryEngine;
-import org.jaggeryjs.core.JaggeryReader;
-import org.jaggeryjs.core.JaggeryScript;
+import org.jaggeryjs.core.*;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ScriptExecutor extends AnInputController {
 
+    private static final String jaggeryHome = "file://" + System.getenv("JAGGERY_HOME").replaceAll(File.separator, "/");
+
+    private static final String INITIALIZER = "/engines/cmd/index.js";
+
     private JaggeryEngine engine;
-    private String cwd;
 
     @Override
     public boolean handle(Context ctx) {
@@ -42,22 +41,16 @@ public class ScriptExecutor extends AnInputController {
     public void plug(Context plug) {
         Map<String, Object> globals = new HashMap<String, Object>();
         try {
-            cwd = new File("").getAbsolutePath();
-            String scriptId = "/Users/ruchira/sources/github/forks/jaggery/engines/cmd/index.js";
-
-            FileReader intializer = new FileReader(scriptId);
-            JaggeryReader reader = new JaggeryReader() {
-                @Override
-                public JaggeryScript getScript(String scriptId) throws IOException {
-                    String path = cwd + scriptId;
-                    return new JaggeryScript(path, new FileReader(path));
-                }
-            };
+            String cwd = "file://" + new File("").getAbsolutePath().replaceAll(File.separator, "/");
             globals.put("cwd", cwd);
-            globals.put("reader", reader);
             globals.put("writer", plug.getIoConsole().getWriter());
             globals.put("separator", Configurator.VALUE_LINE_SEP);
-            engine = new JaggeryEngine(globals, new JaggeryScript(scriptId, intializer));
+            engine = new JaggeryEngine(globals, new JaggeryDiskFile(resolvePath(INITIALIZER)), new JaggeryReader() {
+                @Override
+                public JaggeryFile getFile(String scriptId) throws JaggeryException {
+                    return new JaggeryDiskFile(resolvePath(scriptId));
+                }
+            });
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -65,6 +58,10 @@ public class ScriptExecutor extends AnInputController {
 
     @Override
     public void unplug(Context plug) {
+    }
+
+    private String resolvePath(String path) {
+        return jaggeryHome + path;
     }
 
 }

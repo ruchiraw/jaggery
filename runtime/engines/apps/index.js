@@ -27,7 +27,7 @@ var require = (function (jaggery, application) {
         if (module) {
             return module.exports;
         }
-        var script = reader.getScript(path);
+        var script = reader.getFile(path);
         var r = script.getReader();
         var ch;
         var source = '';

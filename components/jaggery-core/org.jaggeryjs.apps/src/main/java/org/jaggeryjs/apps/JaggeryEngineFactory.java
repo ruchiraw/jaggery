@@ -5,21 +5,19 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.jaggeryjs.core.JaggeryEngine;
 import org.jaggeryjs.core.JaggeryException;
+import org.jaggeryjs.core.JaggeryFile;
 import org.jaggeryjs.core.JaggeryReader;
-import org.jaggeryjs.core.JaggeryScript;
 
 import javax.servlet.ServletContext;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine> {
 
     private ServletContext servletContext;
-
-    private static final String READER_KEY = "reader";
 
     public JaggeryEngineFactory(ServletContext servletContext) {
         this.servletContext = servletContext;
@@ -31,17 +29,29 @@ public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine>
         final JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(servletContext);
         JaggeryReader reader = new JaggeryReader() {
             @Override
-            public JaggeryScript getScript(String scriptId) throws IOException {
-                InputStream in = servletContext.getResourceAsStream(scriptId);
-                if (in == null) {
-                    throw new IOException("script " + scriptId + " cannot be found at " + appConfigs.getContextPath());
-                }
-                return new JaggeryScript("apps:/" + appConfigs.getContextPath() + scriptId, new InputStreamReader(in));
+            public JaggeryFile getFile(final String path) throws JaggeryException {
+                final String id = "apps:/" + appConfigs.getContextPath() + path;
+                final InputStream in = servletContext.getResourceAsStream(path);
+                return new JaggeryFile() {
+                    @Override
+                    public String getId() {
+                        return id;
+                    }
+
+                    @Override
+                    public boolean isExists() {
+                        return in != null;
+                    }
+
+                    @Override
+                    public Reader getReader() {
+                        return new InputStreamReader(in);
+                    }
+                };
             }
         };
-        globals.put(READER_KEY, reader);
         globals.put(JaggeryConstants.CONTEXT_OBJECT, servletContext);
-        return new JaggeryEngine(globals, appConfigs.getInitializer());
+        return new JaggeryEngine(globals, appConfigs.getInitializer(), reader);
     }
 
     @Override
