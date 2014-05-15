@@ -22,10 +22,9 @@ public class JaggeryContextListener implements ServletContextListener {
         } catch (JaggeryException e) {
             throw new RuntimeException("Error initializing Jaggery App : " + servletContext.getContextPath(), e);
         }
-        ServletRegistration registration = servletContext.getServletRegistration(JaggeryAsyncServlet.NAME);
-        if (registration == null) {
-            registration = servletContext.addServlet(JaggeryAsyncServlet.NAME, JaggeryAsyncServlet.class);
-        }
+        ServletRegistration.Dynamic registration = servletContext.addServlet(
+                JaggeryAsyncServlet.NAME, JaggeryAsyncServlet.class);
+        registration.setAsyncSupported(true);
         registration.addMapping("/*");
     }
 

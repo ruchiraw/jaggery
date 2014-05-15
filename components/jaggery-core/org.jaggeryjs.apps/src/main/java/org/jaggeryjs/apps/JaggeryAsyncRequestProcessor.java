@@ -23,8 +23,6 @@ public class JaggeryAsyncRequestProcessor implements Runnable {
 
     @Override
     public void run() {
-        /*System.out.println("Async Supported? "
-                + asyncContext.getRequest().isAsyncSupported());*/
         ServletRequest request = asyncContext.getRequest();
         ServletResponse response = asyncContext.getResponse();
         JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(request.getServletContext());

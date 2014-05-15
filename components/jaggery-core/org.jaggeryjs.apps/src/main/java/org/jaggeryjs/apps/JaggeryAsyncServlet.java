@@ -14,21 +14,12 @@ public class JaggeryAsyncServlet extends HttpServlet {
 
     public static final String NAME = "JaggeryAsyncServlet";
 
-    public void init() {
-
-    }
-
     protected void service(HttpServletRequest request,
                            HttpServletResponse response) throws ServletException, IOException {
-
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-
         JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(request.getServletContext());
-
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new JaggeryAsyncListener());
         asyncCtx.setTimeout(appConfigs.getServletTimeout());
-
         appConfigs.getServletExecutor().execute(new JaggeryAsyncRequestProcessor(asyncCtx));
     }
 }
