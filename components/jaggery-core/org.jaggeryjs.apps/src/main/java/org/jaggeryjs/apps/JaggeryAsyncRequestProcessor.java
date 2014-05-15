@@ -44,7 +44,7 @@ public class JaggeryAsyncRequestProcessor implements Runnable {
             asyncContext.complete();
             try {
                 if (engine != null) {
-                    if (!appConfigs.isDevelopment()) {
+                    if (appConfigs.isDevelopment()) {
                         pool.invalidateObject(engine);
                     } else {
                         pool.returnObject(engine);
