@@ -212,7 +212,7 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
                             public void lifecycleEvent(LifecycleEvent lifecycleEvent) {
                                 if (Lifecycle.BEFORE_START_EVENT.equals(lifecycleEvent.getType())) {
                                     Context context = (Context) lifecycleEvent.getLifecycle();
-                                    context.addParameter(org.jaggeryjs.apps.JaggeryConstants.JAGGERY_INITIALIZER,
+                                    context.addParameter(org.jaggeryjs.apps.JaggeryConstants.INITIALIZER,
                                             "server://jaggery/engines/apps/index.js");
                                     context.getServletContext().addListener(new JaggeryContextListener());
                                 }

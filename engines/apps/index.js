@@ -37,8 +37,8 @@ var require = (function (jaggery, application) {
         var old = engine.get(FILENAME);
         engine.put(FILENAME, script.getId());
         try {
-            //var fn = engine.eval('(function(exports, require, module, filename, application) {' + s + '\n})');
-            var fn = new Function('exports', 'require', 'module', 'filename', 'application', source);
+            var fn = engine.eval('(function(exports, require, module, filename, application) {' + source + '\n})');
+            //var fn = new Function('exports', 'require', 'module', 'filename', 'application', source);
             module = {
                 exports: {}
             };
