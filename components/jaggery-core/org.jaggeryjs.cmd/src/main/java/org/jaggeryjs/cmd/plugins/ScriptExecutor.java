@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class ScriptExecutor extends AnInputController {
 
-    private static final String jaggeryHome = "file://" + System.getenv("JAGGERY_HOME").replaceAll(File.separator, "/");
+    private static final String jaggeryHome = System.getenv("JAGGERY_HOME");
 
     private static final String INITIALIZER = "/engines/cmd/index.js";
 
@@ -41,16 +41,11 @@ public class ScriptExecutor extends AnInputController {
     public void plug(Context plug) {
         Map<String, Object> globals = new HashMap<String, Object>();
         try {
-            String cwd = "file://" + new File("").getAbsolutePath().replaceAll(File.separator, "/");
+            String cwd = new File("").getAbsolutePath();
             globals.put("cwd", cwd);
             globals.put("writer", plug.getIoConsole().getWriter());
             globals.put("separator", Configurator.VALUE_LINE_SEP);
-            engine = new JaggeryEngine(globals, new JaggeryDiskFile(resolvePath(INITIALIZER)), new JaggeryReader() {
-                @Override
-                public JaggeryFile getFile(String scriptId) throws JaggeryException {
-                    return new JaggeryDiskFile(resolvePath(scriptId));
-                }
-            });
+            engine = new JaggeryEngine(jaggeryHome, globals, new JaggeryDiskFile(resolvePath(INITIALIZER)));
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

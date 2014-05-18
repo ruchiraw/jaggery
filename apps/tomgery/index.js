@@ -9,4 +9,6 @@ exports.b = function () {
     print('d');
 };
 
-require('/concurrency.js');
+//require('/concurrency.js');
+
+print('---------1');
