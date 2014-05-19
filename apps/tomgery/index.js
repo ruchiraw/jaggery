@@ -3,6 +3,10 @@ application.serve(function (req, res) {
     //throw new Error("foo");
 });
 
+console.log(__filename);
+
+console.log(__dirname);
+
 module.exports.a = 10;
 
 exports.b = function () {
@@ -10,5 +14,4 @@ exports.b = function () {
 };
 
 //require('/concurrency.js');
-
-print('---------1');
+//require('foo');

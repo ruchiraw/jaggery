@@ -26,6 +26,10 @@
     </listener>
 
     <context-param>
+        <param-name>jaggery.home</param-name>
+        <param-value>file:///Users/ruchira/sources/github/forks/jaggery/runtime</param-value>
+    </context-param>
+    <context-param>
         <param-name>jaggery.initializer</param-name>
         <param-value>server://engines/apps/index.js</param-value>
     </context-param>
@@ -33,8 +37,40 @@
         <param-name>jaggery.development</param-name>
         <param-value>true</param-value>
     </context-param>
-    <context-param>
-        <param-name>jaggery.home</param-name>
-        <param-value>file:///Users/ruchira/sources/github/forks/jaggery/runtime</param-value>
+    <!--<context-param>
+        <param-name>jaggery.engine.pool.min.idle</param-name>
+        <param-value>100</param-value>
     </context-param>
+    <context-param>
+        <param-name>jaggery.engine.pool.max.idle</param-name>
+        <param-value>200</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.engine.pool.max.active</param-name>
+        <param-value>500</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.engine.pool.max.wait</param-name>
+        <param-value>10000</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.executor.pool.min</param-name>
+        <param-value>200</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.executor.pool.max</param-name>
+        <param-value>400</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.executor.keepalive</param-name>
+        <param-value>10000</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.executor.request.queue</param-name>
+        <param-value>10000</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jaggery.servlet.timeout</param-name>
+        <param-value>1000</param-value>
+    </context-param>-->
 </web-app>

@@ -13,13 +13,7 @@ var console = {
     }
 };
 
-var print = function () {
-    console.log('========custom print========');
-};
-
-
 var require = (function (jaggery) {
-
     var FILENAME = Packages.javax.script.ScriptEngine.FILENAME,
         FileReader = Packages.java.io.FileReader,
         File = Packages.java.io.File,
@@ -28,14 +22,12 @@ var require = (function (jaggery) {
         format = java.lang.String.format,
         engine = jaggery.get('engine'),
         home = jaggery.get('home'),
-        modulesDir = 'jaggery_modules',
+        modulesDir = 'jaggery-modules',
         modules = {},
         prefix = '(function(exports,module,require,__filename,__dirname){',
         suffix = '})',
         core = {},
         local = {};
-
-    home = '/Users/ruchira/sources/github/forks/jaggery/runtime';
 
     var normalize = function (path) {
         return path.replace(new RegExp(SEPARATOR, 'ig'), '/');
@@ -52,11 +44,14 @@ var require = (function (jaggery) {
      */
     var joinPaths = function (p1, p2) {
         //TODO: replace this with a proper implementation
+        if (!p1.match(/[\\/]$/)) {
+            p1 += SEPARATOR;
+        }
         if (p2.match(/^[.]\//)) {
             return p1 + p2.substring(2);
         }
         if (p2.match(/^[.]{2}\//)) {
-            return p1.replace(/\/[^\/]*\/$/, '/') + p2.substring(3);
+            return p1.replace(/[\\/][^\\/]*\/$/, SEPARATOR) + p2.substring(3);
         }
         if (p2.match(/^\//)) {
             return p1 + p2.substring(1);
@@ -135,7 +130,8 @@ var require = (function (jaggery) {
 
     var modulePaths = function (start) {
         var parts = start.split(SEPARATOR);
-        var root = (root = parts.indexOf(modulesDir)) == -1 ? 0 : root;
+        var root = parts.indexOf(modulesDir);
+        root = (root == -1) ? 0 : root;
         var i = parts.length - 1;
         var dirs = [];
         var dir;
@@ -153,9 +149,8 @@ var require = (function (jaggery) {
 
     var resolveFile = function (mod) {
         var file,
-            parent = engine.get(FILENAME),
+            parent = dirname(engine.get(FILENAME)),
             dmod = denormalize(mod);
-        parent = '/Users/ruchira/sources/github/forks/jaggery/apps/tomgery/';
         if (mod.match(/^[.]{0,2}[\/]/)) {
             var path = joinPaths(parent, dmod);
             console.log('resolveFile : ' + dmod);
@@ -187,9 +182,10 @@ var require = (function (jaggery) {
         }
         var file = resolveFile(mod);
         var path = file.getAbsolutePath();
+        console.log(path);
         var ext = extension(path);
         var old = engine.get(FILENAME);
-
+        //TODO: properly handle json and js not found issues, invalid content issues etc.
         if (ext === 'json') {
             engine.put(FILENAME, path);
             try {
@@ -200,8 +196,6 @@ var require = (function (jaggery) {
                 };
                 local[path] = module;
                 return module;
-            } catch (e) {
-                throw new Error(format("Error evaluating json '%s'", mod))
             } finally {
                 engine.put(FILENAME, old);
             }
@@ -218,8 +212,6 @@ var require = (function (jaggery) {
                 fn.apply(module.exports, [module.exports, module, require, path, dirname(file)]);
                 modules[path] = module;
                 return module.exports;
-            } catch (e) {
-                throw new Error(format("Error evaluating js module '%s'", mod));
             } finally {
                 engine.put(FILENAME, old);
             }
@@ -243,7 +235,6 @@ var exec = function (options) {
     var index = require('/index.js');
     //var index = require('./index.js');
     console.log(index.a);
-    print(); // TODO: why this doesn't see the overridden print
     //index.b();
     //var fn = application.serve();
     //fn(options.request, options.response);

@@ -47,8 +47,6 @@ public class JaggeryEngine {
             engine.eval(initializer.getReader());
         } catch (Exception e) {
             throw new JaggeryException("Error initializing JaggeryEngine using : " + initializer, e);
-        } finally {
-            engine.put(ScriptEngine.FILENAME, oldScriptId);
         }
     }
 

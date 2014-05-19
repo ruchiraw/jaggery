@@ -56,10 +56,14 @@ public class JaggeryAppConfigs {
         if (!home.startsWith("file://")) {
             throw new JaggeryException("Invalid value for jaggery.home property : " + home);
         }
-        if (!home.endsWith("/")) {
-            home += "/";
+        if (home.endsWith("/")) {
+            home = home.substring(0, home.length() - 1);
         }
-        return !home.endsWith("/") ? home + "/" : home;
+        try {
+            return FileUtils.toFile(new URL(home)).getAbsolutePath();
+        } catch (MalformedURLException e) {
+            throw new JaggeryException(e.getMessage(), e);
+        }
     }
 
     public static JaggeryAppConfigs getInstance(ServletContext servletContext) {
@@ -140,22 +144,18 @@ public class JaggeryAppConfigs {
     }
 
     private JaggeryFile getInitializer(ServletContext servletContext) throws JaggeryException {
-        final String uri = servletContext.getInitParameter(JaggeryConstants.INITIALIZER);
+        String uri = servletContext.getInitParameter(JaggeryConstants.INITIALIZER);
         if (uri == null) {
             throw new JaggeryException("Cannot find " + JaggeryConstants.INITIALIZER +
                     " property. Please define it via servlet init parameters");
         }
         if (uri.startsWith("server://")) {
-            final File initializer;
-            try {
-                initializer = FileUtils.toFile(new URL(resolvePath(uri.substring(9))));
-            } catch (MalformedURLException e) {
-                throw new JaggeryException(e.getMessage(), e);
-            }
+            final String path = resolvePath(uri.substring(9));
+            final File initializer = new File(path);
             return new JaggeryFile() {
                 @Override
                 public String getId() {
-                    return uri;
+                    return path;
                 }
 
                 @Override
@@ -227,6 +227,6 @@ public class JaggeryAppConfigs {
     }
 
     private String resolvePath(String path) {
-        return this.jaggeryHome + path;
+        return this.jaggeryHome + File.separator + path.replaceAll("/", File.separator);
     }
 }
