@@ -9,7 +9,7 @@ var application = (function () {
 
 var console = {
     log: function (s) {
-        java.lang.System.out.println(s || '');
+        //java.lang.System.out.println(s || '');
     }
 };
 
@@ -93,7 +93,7 @@ var require = (function (jaggery) {
     };
 
     var loadDirectory = function (mod) {
-        console.log('loadDir : ' + mod);
+        console.log('loadDirectory : ' + mod);
         var file = new File(mod);
         if (!file.isDirectory()) {
             return null;
@@ -111,11 +111,17 @@ var require = (function (jaggery) {
     };
 
     var loadModules = function (mod, start) {
-        var dirs = modulePaths(start);
-        var i, path, file,
-            length = dirs.length;
-        for (i = 0; i < length; i++) {
-            path = dirs[i] + SEPARATOR + mod;
+        var path, file,
+            dirs = start.split(SEPARATOR),
+            i = dirs.length - 1;
+        while (i > 0) {
+            path = dirs.slice(0, i + 1).join(SEPARATOR);
+            console.log('dir ' + dirs[i]);
+            console.log('path : ' + path);
+            if (dirs[i] !== modulesDir) {
+                path += SEPARATOR + modulesDir;
+            }
+            path += SEPARATOR + mod;
             file = loadFile(path);
             if (file) {
                 return file;
@@ -124,36 +130,19 @@ var require = (function (jaggery) {
             if (file) {
                 return file;
             }
-        }
-        return null;
-    };
-
-    var modulePaths = function (start) {
-        var parts = start.split(SEPARATOR);
-        var root = parts.indexOf(modulesDir);
-        root = (root == -1) ? 0 : root;
-        var i = parts.length - 1;
-        var dirs = [];
-        var dir;
-        while (i >= root) {
-            if (parts[i] == modulesDir) {
-                continue;
-            }
-            dir = parts.slice(0, i + 1).join(SEPARATOR) + SEPARATOR + modulesDir;
-            dirs.push(dir);
             i--;
         }
-        console.log(JSON.stringify(dirs));
-        return dirs;
+        return null;
     };
 
     var resolveFile = function (mod) {
         var file,
             parent = dirname(engine.get(FILENAME)),
             dmod = denormalize(mod);
+        console.log('parent dir : ' + parent);
         if (mod.match(/^[.]{0,2}[\/]/)) {
             var path = joinPaths(parent, dmod);
-            console.log('resolveFile : ' + dmod);
+            console.log('joined path : ' + path);
             file = loadFile(path);
             if (file) {
                 return file;
@@ -163,26 +152,29 @@ var require = (function (jaggery) {
                 return file;
             }
         } else {
-            file = loadModules(dmod, dirname(parent));
+            file = loadModules(dmod, parent);
             if (file) {
                 return file;
             }
         }
-        throw new Error(format("A module with the '%s' cannot be found at '%s'", mod, parent));
+        throw new Error(format("A module with the name '%s' cannot be found at '%s'", mod, parent));
     };
 
     var require = function (mod) {
+        console.log('required : ' + mod);
         var module = core[mod];
         if (module) {
-            return module.exports;
-        }
-        module = local[mod];
-        if (module) {
+            console.log('cached core module : ' + mod);
             return module.exports;
         }
         var file = resolveFile(mod);
         var path = file.getAbsolutePath();
-        console.log(path);
+        console.log('resolved path for module : ' + path);
+        module = local[path];
+        if (module) {
+            console.log('cached local module : ' + mod);
+            return module.exports;
+        }
         var ext = extension(path);
         var old = engine.get(FILENAME);
         //TODO: properly handle json and js not found issues, invalid content issues etc.
@@ -209,8 +201,9 @@ var require = (function (jaggery) {
                     type: 'js',
                     exports: {}
                 };
+                console.log('evaluating module : ' + path);
                 fn.apply(module.exports, [module.exports, module, require, path, dirname(file)]);
-                modules[path] = module;
+                local[path] = module;
                 return module.exports;
             } finally {
                 engine.put(FILENAME, old);
@@ -220,6 +213,7 @@ var require = (function (jaggery) {
     };
 
     require.resolve = function (mod) {
+        console.log('resolving module : ' + mod);
         return resolveFile(mod).getAbsolutePath();
     };
 
@@ -229,15 +223,15 @@ var require = (function (jaggery) {
 
 
 //require('./index.js');
-
+jaggery.get('engine').put(Packages.javax.script.ScriptEngine.FILENAME, '/Users/ruchira/sources/github/forks/jaggery/apps/tomgery/index.js');
 
 var exec = function (options) {
     var index = require('/index.js');
     //var index = require('./index.js');
     console.log(index.a);
     //index.b();
-    //var fn = application.serve();
-    //fn(options.request, options.response);
+    var fn = application.serve();
+    fn(options.request, options.response);
 };
 
 
