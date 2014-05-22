@@ -17,6 +17,8 @@ public class JaggeryEngine {
 
     private static final String EXEC_CALLBACK_KEY = "exec";
 
+    private static final String NAME_KEY = "name";
+
     private static final String ENGINE_KEY = "engine";
 
     private static final String HOME_KEY = "home";
@@ -27,12 +29,13 @@ public class JaggeryEngine {
 
     private static ScriptEngineManager manager = new ScriptEngineManager();
 
-    public JaggeryEngine(String jaggeryHome, Map<String, Object> globals, JaggeryFile initializer)
+    public JaggeryEngine(String name, String jaggeryHome, Map<String, Object> globals, JaggeryFile initializer)
             throws JaggeryException {
         ScriptEngine engine = manager.getEngineByName("js");
         this.invocable = (Invocable) engine;
 
         Bindings bindings = new SimpleBindings();
+        bindings.put(NAME_KEY, name);
         bindings.put(HOME_KEY, jaggeryHome);
         bindings.put(ENGINE_KEY, engine);
         for (Map.Entry<String, Object> entry : globals.entrySet()) {
@@ -40,7 +43,6 @@ public class JaggeryEngine {
         }
         engine.put(JAGGERY_KEY, bindings);
 
-        String oldScriptId = (String) engine.get(ScriptEngine.FILENAME);
         engine.put(ScriptEngine.FILENAME, initializer.getId());
 
         try {

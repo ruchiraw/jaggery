@@ -1,34 +1,17 @@
-//var pipe = require('pipe');
+var pipe = require('pipe');
+var app = require('app');
 
-/*var router = require('./router/router.js');
+pipe.plug(require('router'));
 
- router.app.get('/users/:id', function (req) {
- print('Hello World!' + req.params.id);
- });
-
- pipe.plug(router);
-
- pipe.plug(function (error, req, res, ses, hand) {
- print(JSON.stringify(error));
- });*/
-
-application.serve(function (req, res) {
-    print('hello ===================== ruchira');
-    var r = {
-        getRequestURI: function () {
-            return '/tomgery/users/1';
-        },
-        getMethod: function () {
-            return 'GET';
-        }
-    };
-    //pipe.resolve(r, res);
-    //throw new Error("foo");
+pipe.plug(function (error, req, res, ses, hand) {
+    print(JSON.stringify(error));
 });
 
-/*var Log = require('log');
- var log = new Log('hello');
- log.info('ruchira wageesha');*/
+require('./routes.js');
 
-require('foo');
+app.serve(function (req, res) {
+    //print('hello world');
+    //res.write('hello world');
+    pipe.resolve(req, res);
+});
 

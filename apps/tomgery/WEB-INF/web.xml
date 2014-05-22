@@ -31,11 +31,11 @@
     </context-param>
     <context-param>
         <param-name>jaggery.initializer</param-name>
-        <param-value>server://engines/apps/index.js</param-value>
+        <param-value>server://engines/index.js</param-value>
     </context-param>
     <context-param>
         <param-name>jaggery.development</param-name>
-        <param-value>true</param-value>
+        <param-value>false</param-value>
     </context-param>
     <!--<context-param>
         <param-name>jaggery.engine.pool.min.idle</param-name>

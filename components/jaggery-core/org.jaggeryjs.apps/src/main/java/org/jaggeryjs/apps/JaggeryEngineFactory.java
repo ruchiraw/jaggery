@@ -23,7 +23,8 @@ public class JaggeryEngineFactory extends BasePooledObjectFactory<JaggeryEngine>
         Map<String, Object> globals = new HashMap<String, Object>();
         final JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(servletContext);
         globals.put(JaggeryConstants.CONTEXT_OBJECT, servletContext);
-        return new JaggeryEngine(appConfigs.getJaggeryHome(), globals, appConfigs.getInitializer());
+        return new JaggeryEngine(JaggeryConstants.ENGINE_NAME,
+                appConfigs.getJaggeryHome(), globals, appConfigs.getInitializer());
     }
 
     @Override

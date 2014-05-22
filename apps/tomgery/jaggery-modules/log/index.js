@@ -1,7 +1,7 @@
 var LogFactory = Packages.org.apache.commons.logging.LogFactory;
 
 var Log = function (logger) {
-    this.log = LogFactory.getLog(logger);
+    this.log = LogFactory.getLog(logger || __filename);
 };
 
 Log.prototype.info = function (s) {

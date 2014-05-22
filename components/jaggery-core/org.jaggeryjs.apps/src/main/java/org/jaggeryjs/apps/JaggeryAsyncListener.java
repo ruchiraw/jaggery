@@ -18,7 +18,7 @@ public class JaggeryAsyncListener implements AsyncListener {
 
     @Override
     public void onError(AsyncEvent asyncEvent) throws IOException {
-        //System.out.println("AppAsyncListener onError");
+        System.out.println("AppAsyncListener onError");
         //we can return error response to client
     }
 
@@ -30,7 +30,7 @@ public class JaggeryAsyncListener implements AsyncListener {
 
     @Override
     public void onTimeout(AsyncEvent asyncEvent) throws IOException {
-        //System.out.println("AppAsyncListener onTimeout");
+        System.out.println("AppAsyncListener onTimeout");
         //we can send appropriate response to client
         ServletResponse response = asyncEvent.getAsyncContext().getResponse();
         PrintWriter out = response.getWriter();

@@ -14,7 +14,7 @@ public class ScriptExecutor extends AnInputController {
 
     private static final String jaggeryHome = System.getenv("JAGGERY_HOME");
 
-    private static final String INITIALIZER = "/engines/cmd/index.js";
+    private static final String INITIALIZER = "/engines/index.js";
 
     private JaggeryEngine engine;
 
@@ -45,7 +45,7 @@ public class ScriptExecutor extends AnInputController {
             globals.put("cwd", cwd);
             globals.put("writer", plug.getIoConsole().getWriter());
             globals.put("separator", Configurator.VALUE_LINE_SEP);
-            engine = new JaggeryEngine(jaggeryHome, globals, new JaggeryDiskFile(resolvePath(INITIALIZER)));
+            engine = new JaggeryEngine("cmd", jaggeryHome, globals, new JaggeryDiskFile(resolvePath(INITIALIZER)));
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

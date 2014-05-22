@@ -7,15 +7,12 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.jaggeryjs.core.JaggeryEngine;
 import org.jaggeryjs.core.JaggeryException;
 import org.jaggeryjs.core.JaggeryFile;
-import org.jaggeryjs.core.JaggeryReader;
 
 import javax.servlet.ServletContext;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class JaggeryAppConfigs {
 
@@ -27,9 +24,7 @@ public class JaggeryAppConfigs {
 
     private JaggeryFile initializer;
 
-    private JaggeryReader reader;
-
-    private long servletTimeout = 1000L;
+    private long servletTimeout = 60000L;
 
     private String contextPath;
 
@@ -44,7 +39,6 @@ public class JaggeryAppConfigs {
         this.jaggeryHome = getJaggeryHome(servletContext);
         this.initializer = getInitializer(servletContext);
         this.contextPath = servletContext.getContextPath();
-        this.reader = getReader(servletContext, this.contextPath);
         this.servletTimeout = getLong(servletContext, JaggeryConstants.ASYNC_SERVLET_TIMEOUT, servletTimeout);
     }
 
@@ -198,32 +192,6 @@ public class JaggeryAppConfigs {
         } else {
             throw new JaggeryException("Unsupported file url format " + uri + " for " + JaggeryConstants.INITIALIZER);
         }
-    }
-
-    private JaggeryReader getReader(final ServletContext servletContext, final String contextPath) {
-        return new JaggeryReader() {
-            @Override
-            public JaggeryFile getFile(final String path) throws JaggeryException {
-                final String id = "apps:/" + contextPath + path;
-                final InputStream in = servletContext.getResourceAsStream(path);
-                return new JaggeryFile() {
-                    @Override
-                    public String getId() {
-                        return id;
-                    }
-
-                    @Override
-                    public boolean isExists() {
-                        return in != null;
-                    }
-
-                    @Override
-                    public Reader getReader() {
-                        return new InputStreamReader(in);
-                    }
-                };
-            }
-        };
     }
 
     private String resolvePath(String path) {
