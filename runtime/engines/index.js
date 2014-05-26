@@ -1,9 +1,10 @@
 var console = {
     log: function (s) {
-        //java.lang.System.out.println(s || '');
+        java.lang.System.out.println(s || '');
     }
 };
 
+//TODO: get rid of or cache io operations which occurs during require
 var require = (function (jaggery) {
     var FILENAME = Packages.javax.script.ScriptEngine.FILENAME,
         FileReader = Packages.java.io.FileReader,
@@ -17,8 +18,7 @@ var require = (function (jaggery) {
         modules = {},
         prefix = '(function(exports,module,require,__filename,__dirname){',
         suffix = '})',
-        core = {},
-        local = {};
+        files = {};
 
     var normalize = function (path) {
         return path.replace(new RegExp(SEPARATOR, 'ig'), '/');
@@ -126,47 +126,30 @@ var require = (function (jaggery) {
         return null;
     };
 
-    var resolveFile = function (mod) {
-        var file,
-            parent = dirname(engine.get(FILENAME)),
-            dmod = denormalize(mod);
-        console.log('parent dir : ' + parent);
-        if (mod.match(/^[.]{0,2}[\/]/)) {
-            var path = joinPaths(parent, dmod);
-            console.log('joined path : ' + path);
-            file = loadFile(path);
-            if (file) {
-                return file;
-            }
-            file = loadDirectory(path);
-            if (file) {
-                return file;
-            }
-        } else {
-            file = loadModules(dmod, parent);
-            if (file) {
-                return file;
-            }
+    var cache = function (current, mod, path) {
+        var o,
+            obj = files[current] || (files[current] = {});
+        if (!path) {
+            o = obj[mod];
+            return o ? o.path : null;
         }
-        throw new Error(format("A module with the name '%s' cannot be found at '%s'", mod, parent));
+        obj[mod] = {
+            path: path
+        };
+        return path;
     };
 
-    var require = function (mod) {
+    var requir = function (mod) {
         console.log('required : ' + mod);
         //TODO: implement core module caching
-        var module = core[mod];
-        if (module) {
-            console.log('cached core module : ' + mod);
-            return module.exports;
-        }
-        var file = resolveFile(mod);
-        var path = file.getAbsolutePath();
+        var path = require.resolve(mod);
         console.log('resolved path for module : ' + path);
-        module = local[path];
+        var module = modules[path];
         if (module) {
-            console.log('cached local module : ' + mod);
+            console.log('cached module : ' + mod + ' loaded from : ' + path);
             return module.exports;
         }
+        var file = new File(path);
         var ext = extension(path);
         var old = engine.get(FILENAME);
         //TODO: properly handle json and js not found issues, invalid content issues etc.
@@ -178,8 +161,8 @@ var require = (function (jaggery) {
                     type: 'json',
                     exports: JSON.parse(readFile(file))
                 };
-                local[path] = module;
-                return module;
+                modules[path] = module;
+                return module.exports;
             } finally {
                 engine.put(FILENAME, old);
             }
@@ -193,23 +176,49 @@ var require = (function (jaggery) {
                     type: 'js',
                     exports: {}
                 };
-                console.log('evaluating module : ' + path);
+                console.log('evaluating module : ' + mod + ' with ' + path);
                 fn.apply(module.exports, [module.exports, module, require, path, dirname(file)]);
-                local[path] = module;
+                modules[path] = module;
                 return module.exports;
             } finally {
                 engine.put(FILENAME, old);
             }
         }
-        throw new Error(format("Invalid module required '%s'", mod));
+        throw new Error('Invalid module required ' + mod);
     };
 
-    require.resolve = function (mod) {
+    requir.resolve = function (mod) {
         console.log('resolving module : ' + mod);
-        return resolveFile(mod).getAbsolutePath();
+        var file, module, path, parent, dmod,
+            current = engine.get(FILENAME);
+        console.log('parent dir : ' + current);
+        path = cache(current, mod);
+        if (path) {
+            return path;
+        }
+        parent = dirname(current);
+        dmod = denormalize(mod);
+        if (mod.match(/^[.]{0,2}[\/]/)) {
+            path = joinPaths(parent, dmod);
+            console.log('joined path : ' + path);
+            file = loadFile(path);
+            if (file) {
+                return cache(current, mod, file.getAbsolutePath());
+            }
+            file = loadDirectory(path);
+            if (file) {
+                return cache(current, mod, file.getAbsolutePath());
+            }
+        } else {
+            file = loadModules(dmod, parent);
+            if (file) {
+                return cache(current, mod, file.getAbsolutePath());
+            }
+        }
+        throw new Error('A module with the name ' + mod + ' cannot be found at ' + parent);
     };
 
-    return require;
+    return requir;
 
 }(jaggery));
 
