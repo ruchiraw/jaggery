@@ -7,7 +7,7 @@ pipe.plug(function (error, req, res, ses, hand) {
     print(JSON.stringify(error));
 });
 
-require('./routes.js');
+require('./controllers/routes.js');
 
 app.serve(function (req, res) {
     //print('hello world');

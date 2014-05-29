@@ -11,12 +11,11 @@ var require = (function (jaggery) {
         File = Packages.java.io.File,
         SEPARATOR = File.separator,
         BufferedReader = Packages.java.io.BufferedReader,
-        format = java.lang.String.format,
         engine = jaggery.get('engine'),
         home = jaggery.get('home'),
         modulesDir = 'jaggery-modules',
         modules = {},
-        prefix = '(function(exports,module,require,__filename,__dirname){',
+        prefix = '(function(exports,module,require,__filename,__dirname, global){',
         suffix = '})',
         files = {};
 
@@ -139,87 +138,122 @@ var require = (function (jaggery) {
         return path;
     };
 
-    var requir = function (mod) {
-        console.log('required : ' + mod);
-        //TODO: implement core module caching
-        var path = require.resolve(mod);
-        console.log('resolved path for module : ' + path);
-        var module = modules[path];
-        if (module) {
-            console.log('cached module : ' + mod + ' loaded from : ' + path);
-            return module.exports;
-        }
-        var file = new File(path);
-        var ext = extension(path);
-        var old = engine.get(FILENAME);
-        //TODO: properly handle json and js not found issues, invalid content issues etc.
-        if (ext === 'json') {
-            engine.put(FILENAME, path);
-            try {
-                module = {
-                    id: path,
-                    type: 'json',
-                    exports: JSON.parse(readFile(file))
-                };
-                modules[path] = module;
+    var requirer = function (resolve, global) {
+        var require = function (mod) {
+            console.log('required : ' + mod);
+            //TODO: implement core module caching
+            var path = require.resolve(mod);
+            console.log('resolved path for module : ' + path);
+            var module = modules[path];
+            if (module) {
+                console.log('cached module : ' + mod + ' loaded from : ' + path);
                 return module.exports;
-            } finally {
-                engine.put(FILENAME, old);
             }
-        }
-        if (ext === 'js') {
-            engine.put(FILENAME, path);
-            try {
-                var fn = engine.eval(prefix + readFile(file) + suffix);
-                module = {
-                    id: path,
-                    type: 'js',
-                    exports: {}
-                };
-                console.log('evaluating module : ' + mod + ' with ' + path);
-                fn.apply(module.exports, [module.exports, module, require, path, dirname(file)]);
-                modules[path] = module;
-                return module.exports;
-            } finally {
-                engine.put(FILENAME, old);
+            var file = new File(path);
+            var ext = extension(path);
+            var old = engine.get(FILENAME);
+            //TODO: properly handle json and js not found issues, invalid content issues etc.
+            if (ext === 'json') {
+                engine.put(FILENAME, path);
+                try {
+                    module = {
+                        id: path,
+                        type: 'json',
+                        exports: JSON.parse(readFile(file))
+                    };
+                    modules[path] = module;
+                    return module.exports;
+                } finally {
+                    engine.put(FILENAME, old);
+                }
             }
-        }
-        throw new Error('Invalid module required ' + mod);
+            if (ext === 'js') {
+                engine.put(FILENAME, path);
+                try {
+                    var fn = engine.eval(prefix + readFile(file) + suffix);
+                    module = {
+                        id: path,
+                        type: 'js',
+                        exports: {},
+                        require: requirer(resolver(path))
+                    };
+                    console.log('evaluating module : ' + mod + ' with ' + path);
+                    fn.apply(module.exports, [module.exports, module, module.require, path, dirname(file), global]);
+                    modules[path] = module;
+                    return module.exports;
+                } finally {
+                    engine.put(FILENAME, old);
+                }
+            }
+            throw new Error('Invalid module required ' + mod);
+        };
+        require.resolve = resolve;
+        return require;
     };
 
-    requir.resolve = function (mod) {
-        console.log('resolving module : ' + mod);
-        var file, module, path, parent, dmod,
-            current = engine.get(FILENAME);
-        console.log('parent dir : ' + current);
-        path = cache(current, mod);
-        if (path) {
-            return path;
-        }
-        parent = dirname(current);
-        dmod = denormalize(mod);
-        if (mod.match(/^[.]{0,2}[\/]/)) {
-            path = joinPaths(parent, dmod);
-            console.log('joined path : ' + path);
-            file = loadFile(path);
-            if (file) {
-                return cache(current, mod, file.getAbsolutePath());
+    var resolver = function(current) {
+        return function (mod) {
+            console.log('resolving module : ' + mod);
+            var file, module, path, parent, dmod;
+            console.log('parent dir : ' + current);
+            path = cache(current, mod);
+            if (path) {
+                return path;
             }
-            file = loadDirectory(path);
-            if (file) {
-                return cache(current, mod, file.getAbsolutePath());
+            parent = dirname(current);
+            dmod = denormalize(mod);
+            if (mod.match(/^[.]{0,2}[\/]/)) {
+                path = joinPaths(parent, dmod);
+                console.log('joined path : ' + path);
+                file = loadFile(path);
+                if (file) {
+                    return cache(current, mod, file.getAbsolutePath());
+                }
+                file = loadDirectory(path);
+                if (file) {
+                    return cache(current, mod, file.getAbsolutePath());
+                }
+            } else {
+                file = loadModules(dmod, parent);
+                if (file) {
+                    return cache(current, mod, file.getAbsolutePath());
+                }
             }
-        } else {
-            file = loadModules(dmod, parent);
-            if (file) {
-                return cache(current, mod, file.getAbsolutePath());
-            }
-        }
-        throw new Error('A module with the name ' + mod + ' cannot be found at ' + parent);
+            throw new Error('A module with the name ' + mod + ' cannot be found at ' + parent);
+        };
     };
 
-    return requir;
+    return requirer(resolver(engine.get(FILENAME)), {
+        requirer: requirer,
+        resolver: resolver,
+        jaggery: jaggery
+    });
 
 }(jaggery));
 
 var exec = require('./' + jaggery.get('name'));
+
+/*
+var requirer = function (resolve) {
+    var req = function (mod) {
+        var path;
+        var req = requirer(resolver(path));
+        var fn, globals;
+        fn.call(this, [req, globals]);
+    };
+    req.resolve = resolve;
+    return req;
+};
+
+var resolver = function (current) {
+    return function (mod) {
+
+    };
+};
+
+var require = requirer(resolver('/runtime/engines/index.js'));
+
+require('./apps');*/
+
+
+
