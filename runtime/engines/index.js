@@ -138,7 +138,7 @@ var require = (function (jaggery) {
         return path;
     };
 
-    var requirer = function (resolve, global) {
+    var requirer = function (current, resolver, global) {
         var require = function (mod) {
             console.log('required : ' + mod);
             //TODO: implement core module caching
@@ -175,7 +175,7 @@ var require = (function (jaggery) {
                         id: path,
                         type: 'js',
                         exports: {},
-                        require: requirer(resolver(path))
+                        require: requirer(path, resolver)
                     };
                     console.log('evaluating module : ' + mod + ' with ' + path);
                     fn.apply(module.exports, [module.exports, module, module.require, path, dirname(file), global]);
@@ -187,11 +187,11 @@ var require = (function (jaggery) {
             }
             throw new Error('Invalid module required ' + mod);
         };
-        require.resolve = resolve;
+        require.resolve = resolver(current);
         return require;
     };
 
-    var resolver = function(current) {
+    var resolver = function (current) {
         return function (mod) {
             console.log('resolving module : ' + mod);
             var file, module, path, parent, dmod;
@@ -223,7 +223,7 @@ var require = (function (jaggery) {
         };
     };
 
-    return requirer(resolver(engine.get(FILENAME)), {
+    return requirer(engine.get(FILENAME), resolver, {
         requirer: requirer,
         resolver: resolver,
         jaggery: jaggery
@@ -232,28 +232,6 @@ var require = (function (jaggery) {
 }(jaggery));
 
 var exec = require('./' + jaggery.get('name'));
-
-/*
-var requirer = function (resolve) {
-    var req = function (mod) {
-        var path;
-        var req = requirer(resolver(path));
-        var fn, globals;
-        fn.call(this, [req, globals]);
-    };
-    req.resolve = resolve;
-    return req;
-};
-
-var resolver = function (current) {
-    return function (mod) {
-
-    };
-};
-
-var require = requirer(resolver('/runtime/engines/index.js'));
-
-require('./apps');*/
 
 
 

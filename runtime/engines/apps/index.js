@@ -1,10 +1,16 @@
-
 var io = require('io');
-//var app = require('app');
+var app = require('app');
+
 var JAGGERY_CONFIG = 'jaggery.conf';
 var JAGGERY_CONFIG_PATH = '/' + JAGGERY_CONFIG;
+var builtins = ['app'];
+var builtin = function (mod) {
+    return builtins.indexOf(mod) !== -1;
+};
+
 var jaggery = global.jaggery;
 var context = jaggery.get('context');
+
 var config = context.getResourceAsStream(JAGGERY_CONFIG_PATH);
 if (!config) {
     throw new Error(JAGGERY_CONFIG + ' file cannot be found at ' + JAGGERY_CONFIG_PATH +
@@ -19,13 +25,17 @@ try {
     throw e;
 }
 
-var main = context.getRealPath('/') + '/' + (config.main || 'index.js');
-var requir = global.requirer(global.resolver(main));
-var app = requir('app');
-requir('/index');
+var main = config.main || 'index.js';
+var current = context.getRealPath('/') + '/' + main;
+
+var requir = global.requirer(current, function (curr) {
+    return function (mod) {
+        return builtin(mod) ? global.resolver(__filename)(mod) : global.resolver(curr)(mod);
+    };
+});
+requir('./' + main);
 
 module.exports = function (options) {
-    //jaggery.get('engine').put(Packages.javax.script.ScriptEngine.FILENAME, '/Users/ruchira/sources/github/forks/jaggery/apps/tomgery/index.js');
     var fn = app.serve();
     var req = {
         getRequestURI: function () {
@@ -38,13 +48,11 @@ module.exports = function (options) {
             return options.get('request').getMethod();
         }
     };
-
     var res = {
         write: function (s) {
             options.get('response').getOutputStream().print(s);
         }
     };
-
     fn.call(app, req, res);
 };
 
