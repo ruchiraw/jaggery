@@ -47,6 +47,7 @@ import org.wso2.carbon.webapp.mgt.*;
 
 import javax.servlet.ServletContext;
 import java.io.*;
+import java.net.MalformedURLException;
 import java.util.*;
 
 //import org.wso2.carbon.context.ApplicationContext;
@@ -63,6 +64,18 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
     private static final String JAGGERYAPP_MAIN_KEY = "main";
 
     private static Log log = LogFactory.getLog(TomcatJaggeryWebappsDeployer.class);
+
+    private static String jaggeryHome = null;
+
+    static {
+        //TODO: replace this with a proper code
+        String path = new File(WebAppManager.getJaggeryDir()).getAbsolutePath();
+        path = path.replaceAll(File.separator, "/");
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        jaggeryHome = "file://" + path + (WebAppManager.isJaggery() ? "" : "/repository/resources/jaggery");
+    }
 
     /**
      * Constructor
@@ -212,8 +225,9 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
                             public void lifecycleEvent(LifecycleEvent lifecycleEvent) {
                                 if (Lifecycle.BEFORE_START_EVENT.equals(lifecycleEvent.getType())) {
                                     Context context = (Context) lifecycleEvent.getLifecycle();
+                                    context.addParameter(org.jaggeryjs.apps.JaggeryConstants.HOME, jaggeryHome);
                                     context.addParameter(org.jaggeryjs.apps.JaggeryConstants.INITIALIZER,
-                                            "server://jaggery/engines/apps/index.js");
+                                            "server://engines/index.js");
                                     context.getServletContext().addListener(new JaggeryContextListener());
                                 }
                             }
@@ -879,6 +893,9 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
     }
 
     private static String getJaggeryAppVersion(JSONObject config) {
+        if(config == null) {
+            return null;
+        }
         Object version = config.get(JAGGERYAPP_VERSION_KEY);
         if (version == null || !(version instanceof String)) {
             return null;

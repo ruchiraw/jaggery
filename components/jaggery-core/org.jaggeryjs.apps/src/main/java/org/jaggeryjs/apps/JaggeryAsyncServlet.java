@@ -17,6 +17,7 @@ public class JaggeryAsyncServlet extends HttpServlet {
     protected void service(HttpServletRequest request,
                            HttpServletResponse response) throws ServletException, IOException {
         JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(request.getServletContext());
+        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new JaggeryAsyncListener());
         asyncCtx.setTimeout(appConfigs.getServletTimeout());

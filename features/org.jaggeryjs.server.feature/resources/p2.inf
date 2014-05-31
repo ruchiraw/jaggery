@@ -1,4 +1,4 @@
 instructions.configure = \
-org.eclipse.equinox.p2.touchpoint.natives.mkdir(path:${installFolder}/../../../jaggery); \
-org.eclipse.equinox.p2.touchpoint.natives.mkdir(path:${installFolder}/../../../jaggery/engines); \
-org.eclipse.equinox.p2.touchpoint.natives.copy(source:${installFolder}/../features/org.jaggeryjs.server_${feature.version}/engines/,target:${installFolder}/../../../jaggery/engines,overwrite:true);\
+org.eclipse.equinox.p2.touchpoint.natives.mkdir(path:${installFolder}/../../../repository/resources/jaggery); \
+org.eclipse.equinox.p2.touchpoint.natives.mkdir(path:${installFolder}/../../../repository/resources/jaggery/engines); \
+org.eclipse.equinox.p2.touchpoint.natives.copy(source:${installFolder}/../features/org.jaggeryjs.server_${feature.version}/engines/,target:${installFolder}/../../../repository/resources/jaggery/engines,overwrite:true);\

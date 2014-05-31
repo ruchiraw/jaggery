@@ -58,6 +58,8 @@ public class WebAppManager {
 
     public static final String WS_SERVLET_CONTEXT = "/websocket";
 
+    public static final String JAGGERY_HOME_KEY = "jaggery.home";
+
     private static final String SHARED_JAGGERY_CONTEXT = "shared.jaggery.context";
 
     private static final String SERVE_FUNCTION_JAGGERY = "org.jaggeryjs.serveFunction";
@@ -70,11 +72,15 @@ public class WebAppManager {
 
     private static boolean isWebSocket = false;
 
+    private static String jaggeryDir;
+
+    private static boolean isJaggery = true;
+
     static {
         try {
-
-            String jaggeryDir = System.getProperty("jaggery.home");
+            jaggeryDir = System.getProperty(JAGGERY_HOME_KEY);
             if (jaggeryDir == null) {
+                isJaggery = false;
                 jaggeryDir = System.getProperty("carbon.home");
             }
 
@@ -104,6 +110,14 @@ public class WebAppManager {
         } catch (ScriptException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    public static String getJaggeryDir() {
+        return jaggeryDir;
+    }
+
+    public static boolean isJaggery() {
+        return isJaggery;
     }
 
     public static RhinoEngine getEngine() throws ScriptException {

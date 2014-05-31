@@ -2,15 +2,15 @@ package org.jaggeryjs.apps;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.pool2.ObjectPool;
 import org.jaggeryjs.core.JaggeryException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRegistration;
-import javax.servlet.annotation.WebListener;
+import java.util.concurrent.ThreadPoolExecutor;
 
-@WebListener
 public class JaggeryContextListener implements ServletContextListener {
 
     private static final Log log = LogFactory.getLog(JaggeryContextListener.class);
@@ -31,8 +31,17 @@ public class JaggeryContextListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
         ServletContext servletContext = servletContextEvent.getServletContext();
         JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(servletContext);
-        appConfigs.getServletExecutor().shutdown();
-        appConfigs.getEnginePool().close();
+        if (appConfigs == null) {
+            return;
+        }
+        ThreadPoolExecutor executor = appConfigs.getServletExecutor();
+        if (executor != null) {
+            executor.shutdown();
+        }
+        ObjectPool pool = appConfigs.getEnginePool();
+        if (pool != null) {
+            appConfigs.getEnginePool().close();
+        }
     }
 
 }
