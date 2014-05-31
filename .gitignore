@@ -3,7 +3,6 @@
 
 # Packages #
 ############
-*.jar
 *.rar
 *.tar
 *.zip

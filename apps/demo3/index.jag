@@ -1,0 +1,8 @@
+<html>
+<body>
+<%
+    print('Hi, <h3> Jaggery </h3>');
+%>
+<a href="docs/doc.jag">See Docs</a>
+</body>
+</html>

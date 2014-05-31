@@ -1,0 +1,7 @@
+<html>
+<body>
+<%
+    print('<h3> This is the docs page</h3>');
+%>
+</body>
+</html>

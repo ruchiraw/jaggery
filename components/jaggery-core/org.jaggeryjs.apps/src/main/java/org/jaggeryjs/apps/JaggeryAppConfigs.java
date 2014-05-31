@@ -45,7 +45,7 @@ public class JaggeryAppConfigs {
     private String getJaggeryHome(ServletContext servletContext) throws JaggeryException {
         String home = servletContext.getInitParameter(JaggeryConstants.HOME);
         if (home == null) {
-            throw new JaggeryException("Error reading jaggery.home property");
+            return servletContext.getRealPath("/");
         }
         if (!home.startsWith("file://")) {
             throw new JaggeryException("Invalid value for jaggery.home property : " + home);
@@ -143,58 +143,41 @@ public class JaggeryAppConfigs {
             throw new JaggeryException("Cannot find " + JaggeryConstants.INITIALIZER +
                     " property. Please define it via servlet init parameters");
         }
+
+        final String path;
         if (uri.startsWith("server://")) {
-            final String path = resolvePath(uri.substring(9));
-            final File initializer = new File(path);
-            return new JaggeryFile() {
-                @Override
-                public String getId() {
-                    return path;
-                }
-
-                @Override
-                public boolean isExists() {
-                    return initializer.exists();
-                }
-
-                @Override
-                public Reader getReader() throws JaggeryException {
-                    try {
-                        return new FileReader(initializer);
-                    } catch (FileNotFoundException e) {
-                        throw new JaggeryException(JaggeryConstants.INITIALIZER +
-                                " file cannot be found at " + initializer.toURI().toString(), e);
-                    }
-                }
-            };
-        }
-        JaggeryAppConfigs appConfigs = JaggeryAppConfigs.getInstance(servletContext);
-        if (uri.startsWith("app://")) {
-            String path = uri.substring(5);
-            final String id = "apps:/" + appConfigs.getContextPath() + path;
-            final InputStream in = servletContext.getResourceAsStream(path);
-            return new JaggeryFile() {
-                @Override
-                public String getId() {
-                    return id;
-                }
-
-                @Override
-                public boolean isExists() {
-                    return in != null;
-                }
-
-                @Override
-                public Reader getReader() {
-                    return new InputStreamReader(in);
-                }
-            };
+            path = resolvePath(jaggeryHome, uri.substring(9));
+        } else if (uri.startsWith("app://")) {
+            path = resolvePath(servletContext.getRealPath("/"), uri.substring(5));
         } else {
             throw new JaggeryException("Unsupported file url format " + uri + " for " + JaggeryConstants.INITIALIZER);
         }
+
+        final File initializer = new File(path);
+        return new JaggeryFile() {
+            @Override
+            public String getId() {
+                return path;
+            }
+
+            @Override
+            public boolean isExists() {
+                return initializer.exists();
+            }
+
+            @Override
+            public Reader getReader() throws JaggeryException {
+                try {
+                    return new FileReader(initializer);
+                } catch (FileNotFoundException e) {
+                    throw new JaggeryException(JaggeryConstants.INITIALIZER +
+                            " file cannot be found at " + initializer.toURI().toString(), e);
+                }
+            }
+        };
     }
 
-    private String resolvePath(String path) {
-        return this.jaggeryHome + File.separator + path.replaceAll("/", File.separator);
+    private String resolvePath(String jaggeryHome, String path) {
+        return jaggeryHome + File.separator + path.replaceAll("/", File.separator);
     }
 }
