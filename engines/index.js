@@ -70,7 +70,7 @@ var require = (function (jaggery) {
     };
 
     var loadFile = function (mod) {
-        console.log('loadFile : ' + mod);
+        //console.log('loadFile : ' + mod);
         var file = new File(mod);
         if (file.exists() && !file.isDirectory()) {
             return file;
@@ -83,7 +83,7 @@ var require = (function (jaggery) {
     };
 
     var loadDirectory = function (mod) {
-        console.log('loadDirectory : ' + mod);
+        //console.log('loadDirectory : ' + mod);
         var file = new File(mod);
         if (!file.isDirectory()) {
             return null;
@@ -106,8 +106,8 @@ var require = (function (jaggery) {
             i = dirs.length - 1;
         while (i > 0) {
             path = dirs.slice(0, i + 1).join(SEPARATOR);
-            console.log('dir ' + dirs[i]);
-            console.log('path : ' + path);
+            //console.log('dir ' + dirs[i]);
+            //console.log('path : ' + path);
             if (dirs[i] !== modulesDir) {
                 path += SEPARATOR + modulesDir;
             }
@@ -140,10 +140,10 @@ var require = (function (jaggery) {
 
     var requirer = function (current, resolver, global) {
         var require = function (mod) {
-            console.log('required : ' + mod);
+            console.log('required module : ' + mod);
             //TODO: implement core module caching
             var path = require.resolve(mod);
-            console.log('resolved path for module : ' + path);
+            //console.log('resolved path for module : ' + path);
             var module = modules[path];
             if (module) {
                 console.log('cached module : ' + mod + ' loaded from : ' + path);
@@ -193,9 +193,9 @@ var require = (function (jaggery) {
 
     var resolver = function (current) {
         return function (mod) {
-            console.log('resolving module : ' + mod);
+            //console.log('resolving module : ' + mod);
             var file, module, path, parent, dmod;
-            console.log('parent dir : ' + current);
+            //console.log('parent dir : ' + current);
             path = cache(current, mod);
             if (path) {
                 return path;
@@ -204,7 +204,7 @@ var require = (function (jaggery) {
             dmod = denormalize(mod);
             if (mod.match(/^[.]{0,2}[\/]/)) {
                 path = joinPaths(parent, dmod);
-                console.log('joined path : ' + path);
+                //console.log('joined path : ' + path);
                 file = loadFile(path);
                 if (file) {
                     return cache(current, mod, file.getAbsolutePath());
