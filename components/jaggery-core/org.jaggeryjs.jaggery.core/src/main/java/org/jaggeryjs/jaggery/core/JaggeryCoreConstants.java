@@ -53,6 +53,24 @@ public final class JaggeryCoreConstants {
         public static final String LOG_LEVEL = "logLevel";
         public static final String SESSION_CREATED_LISTENER_SCRIPTS = "sessionCreatedListeners";
         public static final String SESSION_DESTROYED_LISTENER_SCRIPTS = "sessionDestroyedListeners";
+
+        /**
+         * Jaggery 1.0 parameters
+         */
+        public static final String DEVELOPMENT_MODE = "development";
+
+        public static final String ENGINE_CONFIG = "engine";
+        public static final String ENGINE_MIN_IDLE = "minIdle";
+        public static final String ENGINE_MAX_IDLE = "maxIdle";
+        public static final String ENGINE_MAX_ACTIVE = "maxActive";
+        public static final String ENGINE_MAX_WAIT = "maxWait";
+
+        public static final String EXECUTOR_CONFIG = "executor";
+        public static final String EXECUTOR_MIN_THREADS = "minThreads";
+        public static final String EXECUTOR_MAX_THREADS = "maxThreads";
+        public static final String EXECUTOR_KEEPALIVE = "keepalive";
+        public static final String EXECUTOR_REQUEST_QUEUE = "requestQueue";
+        public static final String EXECUTOR_TIMEOUT = "requestTimeout";
     }
 
 }

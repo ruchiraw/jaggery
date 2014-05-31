@@ -213,7 +213,7 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
         securityConstraint.addCollection(securityCollection);
 
         try {
-            JSONObject jaggeryConfigObj = readJaggeryConfig(webappFile);
+            final JSONObject jaggeryConfigObj = readJaggeryConfig(webappFile);
             Tomcat tomcat = DataHolder.getCarbonTomcatService().getTomcat();
             String version = getJaggeryAppVersion(jaggeryConfigObj);
             Context context;
@@ -229,6 +229,11 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
                                     context.addParameter(org.jaggeryjs.apps.JaggeryConstants.INITIALIZER,
                                             "server://engines/index.js");
                                     context.getServletContext().addListener(new JaggeryContextListener());
+                                    if(jaggeryConfigObj != null) {
+                                        setDevelopmentMode(jaggeryConfigObj, context);
+                                        setEngineParameters(jaggeryConfigObj, context);
+                                        setExecutorParameters(jaggeryConfigObj, context);
+                                    }
                                 }
                             }
                         });
@@ -909,6 +914,66 @@ public class TomcatJaggeryWebappsDeployer extends TomcatGenericWebappsDeployer {
             return "index.js";
         }
         return (String) main;
+    }
+
+    private static void setEngineParameters(JSONObject config, Context context) {
+        Object obj = config.get(JaggeryCoreConstants.JaggeryConfigParams.ENGINE_CONFIG);
+        if (obj == null) {
+            return;
+        }
+        JSONObject json = (JSONObject) obj;
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.ENGINE_MIN_IDLE);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.ENGINE_POOL_MIN_IDLE, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.ENGINE_MAX_IDLE);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.ENGINE_POOL_MAX_IDLE, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.ENGINE_MAX_ACTIVE);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.ENGINE_POOL_MAX_ACTIVE, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.ENGINE_MAX_WAIT);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.ENGINE_POOL_MAX_WAIT, String.valueOf(obj));
+        }
+    }
+
+    private static void setExecutorParameters(JSONObject config, Context context) {
+        Object obj = config.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_CONFIG);
+        if (obj == null) {
+            return;
+        }
+        JSONObject json = (JSONObject) obj;
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_MIN_THREADS);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.EXECUTOR_POOL_MIN, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_MAX_THREADS);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.EXECUTOR_POOL_MAX, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_KEEPALIVE);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.EXECUTOR_KEEPALIVE, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_REQUEST_QUEUE);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.EXECUTOR_REQUEST_QUEUE, String.valueOf(obj));
+        }
+        obj = json.get(JaggeryCoreConstants.JaggeryConfigParams.EXECUTOR_TIMEOUT);
+        if (obj != null) {
+            context.addParameter(org.jaggeryjs.apps.JaggeryConstants.ASYNC_SERVLET_TIMEOUT, String.valueOf(obj));
+        }
+    }
+
+    private static void setDevelopmentMode(JSONObject config, Context context) {
+        Object obj = config.get(JaggeryCoreConstants.JaggeryConfigParams.DEVELOPMENT_MODE);
+        if (obj == null) {
+            return;
+        }
+        context.addParameter(org.jaggeryjs.apps.JaggeryConstants.DEVELOPMENT_MODE, String.valueOf(obj));
     }
 }
 
