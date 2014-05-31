@@ -1,9 +1,8 @@
 var io = require('io');
-var app = require('app');
 
 var JAGGERY_CONFIG = 'jaggery.conf';
 var JAGGERY_CONFIG_PATH = '/' + JAGGERY_CONFIG;
-var builtins = ['app'];
+var builtins = ['app', 'jag'];
 var builtin = function (mod) {
     return builtins.indexOf(mod) !== -1;
 };
@@ -30,9 +29,21 @@ var current = context.getRealPath('/') + '/' + main;
 
 var requir = global.requirer(current, function (curr) {
     return function (mod) {
-        return builtin(mod) ? global.resolver(__filename)(mod) : global.resolver(curr)(mod);
+        if (!builtin(mod)) {
+            try {
+                return global.resolver(curr)(mod);
+            } catch (e) {
+                //ignore this, this means, local overriding hasn't found
+            }
+        }
+        return global.resolver(__filename)(mod);
     };
-});
+}, global);
+
+//these are required to initialize the app and jag modules
+var app = requir('app');
+var jag = requir('jag');
+
 requir('./' + main);
 
 module.exports = function (options) {

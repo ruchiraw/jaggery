@@ -7,7 +7,7 @@ var File = Packages.java.io.File;
 
 exports.streamgify = function (is) {
     if (!is) {
-        return '';
+        return null;
     }
     var writer = new StringWriter();
     var buffer = Array.newInstance(Character.TYPE, 1024);
@@ -23,6 +23,6 @@ exports.streamgify = function (is) {
     return writer.toString();
 };
 
-exports.current = function() {
+exports.current = function () {
     return new File('').getAbsolutePath();
 };

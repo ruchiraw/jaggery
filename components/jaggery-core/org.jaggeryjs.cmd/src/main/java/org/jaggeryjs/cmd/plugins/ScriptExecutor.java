@@ -4,7 +4,8 @@ import org.clamshellcli.api.Configurator;
 import org.clamshellcli.api.Context;
 import org.clamshellcli.api.IOConsole;
 import org.clamshellcli.core.AnInputController;
-import org.jaggeryjs.core.*;
+import org.jaggeryjs.core.JaggeryDiskFile;
+import org.jaggeryjs.core.JaggeryEngine;
 
 import java.io.File;
 import java.util.HashMap;
@@ -31,7 +32,7 @@ public class ScriptExecutor extends AnInputController {
                     console.print(obj.toString() + Configurator.VALUE_LINE_SEP);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println(getError(e));
             }
         }
         return true;
@@ -58,6 +59,14 @@ public class ScriptExecutor extends AnInputController {
 
     private String resolvePath(String path) {
         return jaggeryHome + path;
+    }
+
+    private String getError(Throwable e) {
+        Throwable cause = e.getCause();
+        if (cause == null || cause.getMessage() == null) {
+            return e.getMessage();
+        }
+        return getError(e.getCause());
     }
 
 }
