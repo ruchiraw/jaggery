@@ -32,7 +32,7 @@ public class ScriptExecutor extends AnInputController {
                     console.print(obj.toString() + Configurator.VALUE_LINE_SEP);
                 }
             } catch (Exception e) {
-                System.err.println(getError(e));
+                e.printStackTrace();
             }
         }
         return true;
@@ -60,13 +60,4 @@ public class ScriptExecutor extends AnInputController {
     private String resolvePath(String path) {
         return jaggeryHome + path;
     }
-
-    private String getError(Throwable e) {
-        Throwable cause = e.getCause();
-        if (cause == null || cause.getMessage() == null) {
-            return e.getMessage();
-        }
-        return getError(e.getCause());
-    }
-
 }
