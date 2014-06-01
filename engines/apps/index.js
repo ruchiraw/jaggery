@@ -61,7 +61,7 @@ module.exports = function (options) {
     };
     var res = {
         write: function (s) {
-            options.get('response').getOutputStream().print(s);
+            options.get('response').getOutputStream().print(String(s));
         }
     };
     fn.call(app, req, res);
