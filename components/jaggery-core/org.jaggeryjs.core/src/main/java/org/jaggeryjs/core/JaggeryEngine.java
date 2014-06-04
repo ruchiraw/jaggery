@@ -3,12 +3,7 @@ package org.jaggeryjs.core;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.script.Bindings;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
+import javax.script.*;
 import java.util.Map;
 
 public class JaggeryEngine {
@@ -25,13 +20,21 @@ public class JaggeryEngine {
 
     private static final String JAGGERY_KEY = "jaggery";
 
+    private static final String SCRIPT_ENGINE_NAME = "jaggery";
+
+    private static final String SCRIPT_ENGINE_FACTORY = "javax.script.ScriptEngineFactory";
+
     private Invocable invocable;
 
     private static ScriptEngineManager manager = new ScriptEngineManager();
 
+    static {
+        initEngineFactory(manager);
+    }
+
     public JaggeryEngine(String name, String jaggeryHome, Map<String, Object> globals, JaggeryFile initializer)
             throws JaggeryException {
-        ScriptEngine engine = manager.getEngineByName("js");
+        ScriptEngine engine = manager.getEngineByName(SCRIPT_ENGINE_NAME);
         this.invocable = (Invocable) engine;
 
         Bindings bindings = new SimpleBindings();
@@ -63,6 +66,21 @@ public class JaggeryEngine {
             throw new JaggeryException("Error executing exec callback of JaggeryEngine", e);
         } catch (NoSuchMethodException e) {
             throw new JaggeryException("\"exec\" callback cannot be found in the JaggeryEngine", e);
+        }
+    }
+
+    private static void initEngineFactory(ScriptEngineManager manager) {
+        String clazz = System.getProperty(SCRIPT_ENGINE_FACTORY);
+        if (clazz == null) {
+            manager.registerEngineName(SCRIPT_ENGINE_NAME, manager.getEngineByName("js").getFactory());
+            return;
+        }
+        try {
+            Class cl = Class.forName(clazz);
+            ScriptEngineFactory factory = (ScriptEngineFactory) cl.newInstance();
+            manager.registerEngineName(SCRIPT_ENGINE_NAME, factory);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 }

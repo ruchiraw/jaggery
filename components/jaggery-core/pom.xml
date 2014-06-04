@@ -32,6 +32,7 @@
     <url>http://wso2.org</url>
 
     <modules>
+        <module>com.sun.phobos.script</module>
         <module>org.jaggeryjs.jaggery.core</module>
         <module>org.jaggeryjs.core</module>
         <module>org.jaggeryjs.apps</module>
